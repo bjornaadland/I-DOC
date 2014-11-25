@@ -1,4 +1,4 @@
-package nhc.no.i_doc;
+package no.nhc.i_doc;
 
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;

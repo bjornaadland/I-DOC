@@ -1,4 +1,4 @@
-package no.nhc.idoc;
+package no.nhc.i_doc;
 
 import java.util.List;
 import java.util.ArrayList;

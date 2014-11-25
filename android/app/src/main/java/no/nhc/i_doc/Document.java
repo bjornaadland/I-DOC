@@ -1,4 +1,4 @@
-package no.nhc.idoc;
+package no.nhc.i_doc;
 
 /**
  *  Document is a more or less abstract definition that
