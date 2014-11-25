@@ -5,13 +5,25 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import android.util.Log;
 
 public class MainActivity extends ActionBarActivity {
+    public static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        DocumentDB db = DocumentDB.get(this);
+
+        if (db != null) {
+            for (Document d : db.getDocumentList()) {
+                Log.d(TAG, "document: " + d.getTitle());
+            }
+        } else {
+            Log.e(TAG, "could not create database");
+        }
     }
 
 
