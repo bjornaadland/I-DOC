@@ -27,21 +27,82 @@ public class CouchDocumentDB extends DocumentDB
 {
     public static final String TAG = "CouchDocumentDB";
 
+    public static Database mSingletonDatabase;
+
     private Manager manager;
     private Database database;
 
-    private static final class CouchDocument extends Document
+    private static final class CouchDocument implements Document
     {
-        private Object id;
+        private Object mId;
+        private String mTitle;
+        private java.util.List<String> mFiles;
+        com.couchbase.lite.Document mCouchDoc;
 
-        public CouchDocument(Object id)
+        public CouchDocument(Object id, String title)
         {
-            this.id = id;
+            mId = id;
+            mTitle = title;
+        }
+
+        private void load()
+        {
+            mFiles = new ArrayList<String>();
+
+            if (mId != null) {
+                mCouchDoc = mSingletonDatabase.getDocument((String)mId);
+
+                Map<String, Object> props = mCouchDoc.getProperties();
+                java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+
+                for (Object o : files) {
+                    Map<String, Object> file = (Map<String, Object>)o;
+                    String uri = (String)file.get("uri");
+
+                    mFiles.add(uri);
+                }
+            }
+        }
+
+        public String getTitle()
+        {
+            return mTitle;
+        }
+
+        public void setTitle(String title)
+        {
+            mTitle = title;
+        }
+
+        public Document.Metadata getMetadata()
+        {
+            return null;
+        }
+
+        public void setMetadata(Document.Metadata metadata)
+        {
+        }
+
+        public java.util.List<String> getFiles()
+        {
+            if (mFiles == null) {
+                load();
+            }
+
+            return mFiles;
+        }
+
+        public void addFile(String file)
+        {
+            if (mFiles == null) {
+                getFiles();
+            }
+            mFiles.add(file);
         }
 
         public Object getID()
         {
-            return id;
+            return mId;
         }
     }
 
@@ -72,9 +133,7 @@ public class CouchDocumentDB extends DocumentDB
 
         public Document getDocument(int position) {
             QueryRow row = enumerator.getRow(position);
-            Document d = new CouchDocument(row.getKey());
-            d.setTitle("" + row.getValue());
-            return d;
+            return new CouchDocument(row.getKey(), "" + row.getValue());
         }
 
         public void setListener(DocumentDB.Listener l) {
@@ -101,6 +160,7 @@ public class CouchDocumentDB extends DocumentDB
         try {
             manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
             database = manager.getDatabase("idoc");
+            mSingletonDatabase = database;
         } catch (IOException e) {
             throw new RuntimeException("could not create database manager, IOException");
         } catch (CouchbaseLiteException e) {
@@ -156,7 +216,7 @@ public class CouchDocumentDB extends DocumentDB
 
     public Document createDocument()
     {
-        return new CouchDocument(null);
+        return new CouchDocument(null, "");
     }
 
     public void saveDocument(Document d)
@@ -165,9 +225,9 @@ public class CouchDocumentDB extends DocumentDB
         Map<String, Object> prop = new HashMap<String, Object>();
         ArrayList<Object> files = new ArrayList<Object>();
 
-        {
+        for (String fn : cDoc.getFiles()) {
             Map<String, Object> file = new HashMap<String, Object>();
-            file.put("uri", "file:///file");
+            file.put("uri", fn);
             file.put("datetime", "0");
             file.put("description", "");
             {
