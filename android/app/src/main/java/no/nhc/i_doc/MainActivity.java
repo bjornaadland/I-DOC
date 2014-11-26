@@ -3,7 +3,9 @@ package no.nhc.i_doc;
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -13,6 +15,10 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener
 {
@@ -125,9 +131,33 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
 
 
+    String mCurrentPhotoPath;
+    
+    private File createImageFile()  {
+        try {
+            // Create an image file name
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+            File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+            File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+                );
+            
+            // Save a file: path for use with ACTION_VIEW intents
+            mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+            return image;
+        } 
+        catch (IOException e) {
+            return null;
+        }
+    }
+
     public void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(createImageFile()));
             startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
         }
     }
@@ -144,17 +174,30 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+        switch (requestCode) {
+        case REQUEST_IMAGE_CAPTURE:
+            DocumentDB db = DocumentDB.get(this);
+            Document doc = db.createDocument();
+            doc.setTitle(mCurrentPhotoPath);
+            db.saveDocument(doc);
+            
 /*
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             mImageView.setImageBitmap(imageBitmap);
-        } else if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
+*/
+            break;
+        case REQUEST_VIDEO_CAPTURE:
+/*
             Uri videoUri = data.getData();
             mVideoView.setVideoURI(videoUri);
             mVideoView.start();
-        }
 */
+            break;
+        }
     }
 
 
