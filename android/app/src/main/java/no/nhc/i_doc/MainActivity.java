@@ -11,6 +11,8 @@ import android.support.v4.view.ViewPager;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import android.util.Log;
+
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener {
 
     AppSectionsPagerAdapter mAppSectionsPagerAdapter;
@@ -20,6 +22,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        DocumentDB db = DocumentDB.get(this);
+
+        if (db != null) {
+            for (Document d : db.getDocumentList()) {
+                Log.d(TAG, "document: " + d.getTitle());
+            }
+        } else {
+            Log.e(TAG, "could not create database");
+        }
 
         mAppSectionsPagerAdapter = new AppSectionsPagerAdapter(getSupportFragmentManager());
 
