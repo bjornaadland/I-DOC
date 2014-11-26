@@ -188,9 +188,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         case REQUEST_IMAGE_CAPTURE:
             DocumentDB db = DocumentDB.get(this);
             Document doc = db.createDocument();
-            doc.setTitle(mCurrentPhotoPath);
+            doc.addFile(mCurrentPhotoPath);
             db.saveDocument(doc);
-            
 /*
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
