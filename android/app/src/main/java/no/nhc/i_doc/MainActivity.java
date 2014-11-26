@@ -105,7 +105,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         return super.onOptionsItemSelected(item);
     }
 
-    public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
+    private class AppSectionsPagerAdapter extends FragmentPagerAdapter {
 
         public AppSectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -130,7 +130,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return "Section " + (position + 1);
+            switch (position) {
+            case 0:
+                return getText(R.string.gather_evidence);
+            default:
+                return getText(R.string.evidence);
+            }
         }
     }
 
@@ -185,9 +190,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         case REQUEST_IMAGE_CAPTURE:
             DocumentDB db = DocumentDB.get(this);
             Document doc = db.createDocument();
-            doc.setTitle(mCurrentPhotoPath);
+            doc.addFile(mCurrentPhotoPath);
             db.saveDocument(doc);
-            
 /*
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");

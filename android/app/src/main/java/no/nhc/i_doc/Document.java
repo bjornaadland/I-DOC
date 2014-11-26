@@ -1,5 +1,9 @@
 package no.nhc.i_doc;
 
+import java.util.List;
+import java.util.ArrayList;
+
+
 /**
  *  Document is a more or less abstract definition that
  *  represents an instance of "evidence".
@@ -8,10 +12,15 @@ package no.nhc.i_doc;
  */
 public class Document
 {
-    private String title;
+    private String mTitle;
+    private List<String> mFiles;
 
     private class Metadata
     {
+    }
+
+    Document() {
+        mFiles = new ArrayList<String>();
     }
 
     /**
@@ -19,7 +28,7 @@ public class Document
      */
     public String getTitle()
     {
-        return title;
+        return mTitle;
     }
 
     /**
@@ -27,7 +36,7 @@ public class Document
      */
     public void setTitle(String title)
     {
-        this.title = title;
+        mTitle = title;
     }
 
     /**
@@ -44,4 +53,19 @@ public class Document
     public void setMetadata(Metadata data)
     {
     }
+
+    /**
+     * Add a file to this document.
+     */
+    public void addFile(String file) {
+        mFiles.add(file);
+    }
+
+    /**
+     * Get the files held by this document.
+     */
+    public List<String> getFiles() {
+        return mFiles;
+    }
+
 }

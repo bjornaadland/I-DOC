@@ -8,5 +8,7 @@
     <string name="button_record_video">Record video</string>
     <string name="button_record_sound">Record sound</string>
     <string name="button_take_picture">Take picture</string>
+    <string name="gather_evidence">Gather evidence</string>
+    <string name="evidence">Evidence</string>
 
 </resources>

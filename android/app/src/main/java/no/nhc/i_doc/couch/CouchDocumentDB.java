@@ -123,34 +123,9 @@ public class CouchDocumentDB extends DocumentDB
 
     private void addTestDocs() {
         for (int i = 0; i < 20; ++i) {
-            Map<String, Object> p = new HashMap<String, Object>();
-            ArrayList<Object> files = new ArrayList<Object>();
-
-            {
-                Map<String, Object> file = new HashMap<String, Object>();
-                file.put("uri", "file:///file");
-                file.put("datetime", "0");
-                file.put("description", "");
-                {
-                    Map<String, Object> loc = new HashMap<String, Object>();
-                    loc.put("lat", 0);
-                    loc.put("long", 0);
-                    file.put("location", loc);
-                }
-                files.add(file);
-            }
-
-            p.put("title", new Character((char)('a' + i)).toString());
-            p.put("files", files);
-
-            UnsavedRevision rev = database.createDocument().createRevision();
-            rev.setUserProperties(p);
-            try {
-                rev.save();
-            } catch (CouchbaseLiteException e) {
-                Log.e(TAG, "problem saving document");
-                return;
-            }
+            Document d = createDocument();
+            d.setTitle(new Character((char)('a' + i)).toString());
+            saveDocument(d);
         }
     }
 
@@ -186,5 +161,42 @@ public class CouchDocumentDB extends DocumentDB
 
     public void saveDocument(Document d)
     {
+        CouchDocument cDoc = (CouchDocument)d;
+        Map<String, Object> prop = new HashMap<String, Object>();
+        ArrayList<Object> files = new ArrayList<Object>();
+
+        {
+            Map<String, Object> file = new HashMap<String, Object>();
+            file.put("uri", "file:///file");
+            file.put("datetime", "0");
+            file.put("description", "");
+            {
+                Map<String, Object> loc = new HashMap<String, Object>();
+                loc.put("lat", 0);
+                loc.put("long", 0);
+                file.put("location", loc);
+            }
+            files.add(file);
+        }
+
+        prop.put("title", cDoc.getTitle());
+        prop.put("files", files);
+
+        com.couchbase.lite.Document cblDoc;
+
+        if (cDoc.getID() == null) {
+            cblDoc = database.createDocument();
+        } else {
+            cblDoc = database.getDocument((String)cDoc.getID());
+        }
+
+        UnsavedRevision rev = cblDoc.createRevision();
+        rev.setUserProperties(prop);
+
+        try {
+            rev.save();
+        } catch (CouchbaseLiteException e) {
+            throw new RuntimeException("problem saving document");
+        }
     }
 }
