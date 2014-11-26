@@ -13,6 +13,9 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 class EvidenceAdapter extends BaseAdapter {
@@ -79,8 +82,12 @@ class EvidenceAdapter extends BaseAdapter {
             // TODO: Display generic icon
         }
 
-//        TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
-//        descriptionTextView.setText(document.....)
+        {
+            TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
+            Date date = new Date(document.getTimestamp() * 1000L);
+            DateFormat f = DateFormat.getDateTimeInstance();
+            descriptionTextView.setText(f.format(date));
+        }
 
         return convertView;
     }

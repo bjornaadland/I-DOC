@@ -38,13 +38,11 @@ public class CouchDocumentDB extends DocumentDB
     private static final class CouchDocument implements Document
     {
         private Object mId;
-        private String mTitle;
         UnsavedRevision mRev;
 
-        public CouchDocument(Object id, String title)
+        public CouchDocument(Object id)
         {
             mId = id;
-            mTitle = title;
         }
 
         /**
@@ -60,7 +58,8 @@ public class CouchDocumentDB extends DocumentDB
 
                     Map<String, Object> props = new HashMap<String, Object>();
 
-                    props.put("title", mTitle);
+                    props.put("title", "");
+                    props.put("timestamp", System.currentTimeMillis() / 1000);
                     props.put("files", new ArrayList<Object>());
 
                     mRev.setProperties(props);
@@ -75,12 +74,17 @@ public class CouchDocumentDB extends DocumentDB
 
         public String getTitle()
         {
-            return mTitle;
+            return (String)getRevision().getProperties().get("title");
         }
 
         public void setTitle(String title)
         {
-            mTitle = title;
+            getRevision().getProperties().put("title", title);
+        }
+
+        public int getTimestamp()
+        {
+            return (int)getRevision().getProperties().get("timestamp");
         }
 
         public Document.Metadata getMetadata()
@@ -114,7 +118,7 @@ public class CouchDocumentDB extends DocumentDB
             Map<String, Object> fileProps = new HashMap<String, Object>();
 
             fileProps.put("uri", file);
-            fileProps.put("datetime", "0");
+            fileProps.put("timestamp", System.currentTimeMillis() / 1000);
             fileProps.put("description", "");
             {
                 Map<String, Object> loc = new HashMap<String, Object>();
@@ -162,7 +166,7 @@ public class CouchDocumentDB extends DocumentDB
 
         public Document getDocument(int position) {
             QueryRow row = enumerator.getRow(position);
-            return new CouchDocument(row.getKey(), "" + row.getValue());
+            return new CouchDocument(row.getValue());
         }
 
         public void setListener(DocumentDB.Listener l) {
@@ -212,7 +216,7 @@ public class CouchDocumentDB extends DocumentDB
         if (v.getMap() == null) {
             v.setMap(new Mapper() {
                 public void map(Map<String, Object> document, Emitter emitter) {
-                    emitter.emit(document.get("_id"), document.get("title"));
+                    emitter.emit(document.get("timestamp"), document.get("_id"));
                 }
             }, "1");
         }
@@ -230,20 +234,20 @@ public class CouchDocumentDB extends DocumentDB
 
     public DocumentDB.List getDocumentList()
     {
-        return new CouchDocumentList(getQuery().toLiveQuery());
+        LiveQuery lq = getQuery().toLiveQuery();
+        lq.setDescending(true);
+        return new CouchDocumentList(lq);
     }
 
     public Document createDocument()
     {
-        return new CouchDocument(null, "");
+        return new CouchDocument(null);
     }
 
     public void saveDocument(Document d)
     {
         CouchDocument cDoc = (CouchDocument)d;
         UnsavedRevision rev = cDoc.getRevision();
-
-        rev.getProperties().put("title", cDoc.getTitle());
 
         try {
             rev.save();

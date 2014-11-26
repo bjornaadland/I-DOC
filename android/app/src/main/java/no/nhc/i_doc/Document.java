@@ -25,6 +25,11 @@ public abstract interface Document
     abstract void setTitle(String title);
 
     /**
+     *  Get seconds (from 1970)
+     */
+    abstract int getTimestamp();
+
+    /**
      *  Retrieve the metadata associated with the document
      */
     abstract Metadata getMetadata();

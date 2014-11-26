@@ -176,6 +176,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     }
     
     public void dispatchRecordSoundIntent() {
+        /* test creating an empty document */
+        DocumentDB db = DocumentDB.get(this);
+        Document doc = db.createDocument();
+        db.saveDocument(doc);
     }
 
     @Override
