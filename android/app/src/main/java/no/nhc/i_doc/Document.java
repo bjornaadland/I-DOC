@@ -1,5 +1,7 @@
 package no.nhc.i_doc;
 
+import android.net.Uri;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -13,6 +15,8 @@ import java.util.ArrayList;
 public abstract interface Document
 {
     public static class Metadata {}
+
+    abstract Uri getUri();
 
     /**
      *  Retrieve Document title

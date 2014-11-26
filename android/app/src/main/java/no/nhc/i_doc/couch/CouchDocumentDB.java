@@ -1,6 +1,7 @@
 package no.nhc.i_doc;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -26,6 +27,7 @@ import java.util.Map;
 public class CouchDocumentDB extends DocumentDB
 {
     public static final String TAG = "CouchDocumentDB";
+    public static final String UriScheme = "evidence";
 
     public static Database mSingletonDatabase;
 
@@ -70,6 +72,21 @@ public class CouchDocumentDB extends DocumentDB
             }
 
             return mRev;
+        }
+
+        public void resetRevision()
+        {
+            mRev = null;
+        }
+
+        public Uri getUri()
+        {
+            if (mId == null) {
+                return null;
+            }
+
+            Uri.Builder builder = new Uri.Builder();
+            return builder.scheme(UriScheme).authority((String)mId).build();
         }
 
         public String getTitle()
@@ -153,6 +170,7 @@ public class CouchDocumentDB extends DocumentDB
             liveQuery.addChangeListener(new LiveQuery.ChangeListener() {
                 @Override
                 public void changed(final LiveQuery.ChangeEvent event) {
+                    Log.d(TAG, "LiveQuery changed...");
                     Message.obtain(mChangedHandler, 0).sendToTarget();
                 }
             });
@@ -244,12 +262,22 @@ public class CouchDocumentDB extends DocumentDB
         return new CouchDocument(null);
     }
 
+    public Document getDocument(Uri uri)
+    {
+        if (uri.getScheme().equals(UriScheme)) {
+            return new CouchDocument(uri.getAuthority());
+        } else {
+            return null;
+        }
+    }
+
     public void saveDocument(Document d)
     {
         CouchDocument cDoc = (CouchDocument)d;
         UnsavedRevision rev = cDoc.getRevision();
 
         try {
+            cDoc.resetRevision();
             rev.save();
         } catch (CouchbaseLiteException e) {
             throw new RuntimeException("problem saving document");

@@ -1,6 +1,7 @@
 package no.nhc.i_doc;
 
 import android.content.Context;
+import android.net.Uri;
 
 /**
  *  DocumentDB concerns the set of stored documents,
@@ -45,6 +46,11 @@ public abstract class DocumentDB
      *  Create an empty document
      */
     abstract Document createDocument();
+
+    /**
+     *  Get a document from a Uri
+     */
+    abstract Document getDocument(Uri uri);
 
     /**
      *  Save a new or update an already existing Document
