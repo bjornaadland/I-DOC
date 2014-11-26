@@ -1,12 +1,15 @@
 package no.nhc.i_doc;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 import com.couchbase.lite.android.AndroidContext;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Emitter;
 import com.couchbase.lite.Database;
+import com.couchbase.lite.LiveQuery;
 import com.couchbase.lite.Manager;
 import com.couchbase.lite.Mapper;
 import com.couchbase.lite.Query;
@@ -17,7 +20,6 @@ import com.couchbase.lite.View;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +42,56 @@ public class CouchDocumentDB extends DocumentDB
         public Object getID()
         {
             return id;
+        }
+    }
+
+    private static final class CouchDocumentList implements DocumentDB.List {
+        private LiveQuery liveQuery;
+        private QueryEnumerator enumerator;
+        private DocumentDB.Listener listener;
+        private Handler mChangedHandler;
+
+        public CouchDocumentList(LiveQuery lq) {
+            liveQuery = lq;
+
+            mChangedHandler = createChangeHandler();
+
+            liveQuery.addChangeListener(new LiveQuery.ChangeListener() {
+                @Override
+                public void changed(final LiveQuery.ChangeEvent event) {
+                    Message.obtain(mChangedHandler, 0).sendToTarget();
+                }
+            });
+        }
+
+        public int getCount() {
+            return enumerator == null ? 0 : enumerator.getCount();
+        }
+
+        public Document getDocument(int position) {
+            QueryRow row = enumerator.getRow(position);
+            Document d = new CouchDocument(row.getKey());
+            d.setTitle("" + row.getValue());
+            return d;
+        }
+
+        public void setListener(DocumentDB.Listener l) {
+            listener = l;
+        }
+
+        /**
+         *  create Handler running on UI thread to respond to change events
+         */
+        private Handler createChangeHandler() {
+            return new Handler() {
+                @Override
+                public void handleMessage(Message msg) {
+                    enumerator = liveQuery.getRows();
+                    if (listener != null) {
+                        listener.changed();
+                    }
+                }
+            };
         }
     }
 
@@ -70,7 +122,7 @@ public class CouchDocumentDB extends DocumentDB
     private void addTestDocs() {
         for (int i = 0; i < 20; ++i) {
             Map<String, Object> p = new HashMap<String, Object>();
-            List<Object> files = new ArrayList<Object>();
+            ArrayList<Object> files = new ArrayList<Object>();
 
             {
                 Map<String, Object> file = new HashMap<String, Object>();
@@ -100,7 +152,7 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
-    public List<Document> getDocumentList()
+    public DocumentDB.List getDocumentList()
     {
         try {
             database.delete();
@@ -108,22 +160,17 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         try {
-            QueryEnumerator qe = getQuery().run();
+            Query q = getQuery();
+            QueryEnumerator qe = q.run();
 
             if (qe.getCount() == 0) {
                 addTestDocs();
                 // rerun??
-                qe = getQuery().run();
+                q = getQuery();
+                qe = q.run();
             }
 
-            List<Document> l = new ArrayList<Document>();
-            for (int i = 0; i < qe.getCount(); ++i) {
-                QueryRow row = qe.getRow(i);
-                Document d = new CouchDocument(row.getKey());
-                d.setTitle("" + row.getValue());
-                l.add(d);
-            }
-            return l;
+            return new CouchDocumentList(q.toLiveQuery());
         } catch (CouchbaseLiteException e) {
             Log.e(TAG, "problem running query");
             return null;

@@ -37,7 +37,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         DocumentDB db = DocumentDB.get(this);
 
         if (db != null) {
-            for (Document d : db.getDocumentList()) {
+            DocumentDB.List l = db.getDocumentList();
+            for (int i = 0; i < l.getCount(); ++i) {
+                Document d = l.getDocument(i);
                 Log.d(TAG, "document: " + d.getTitle());
             }
         } else {
