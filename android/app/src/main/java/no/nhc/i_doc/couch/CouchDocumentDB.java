@@ -123,7 +123,7 @@ public class CouchDocumentDB extends DocumentDB
                 fileProps.put("location", loc);
             }
 
-            files.add(file);
+            files.add(fileProps);
         }
 
         public Object getID()
