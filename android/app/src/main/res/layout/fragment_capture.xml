@@ -1,9 +1,26 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" tools:context="no.nhc.i_doc.CaptureFragment">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" 
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" 
+    android:orientation="vertical" 
+    tools:context="no.nhc.i_doc.CaptureFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView android:layout_width="match_parent" android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+  <Button xmlns:android="http://schemas.android.com/apk/res/android"
+	  android:id="@+id/button_take_picture"
+	  android:layout_width="wrap_content"
+	  android:layout_height="wrap_content"
+	  android:text="@string/button_take_picture"/>
 
-</FrameLayout>
+  <Button xmlns:android="http://schemas.android.com/apk/res/android"
+	  android:id="@+id/button_record_video"
+	  android:layout_width="wrap_content"
+	  android:layout_height="wrap_content"
+	  android:text="@string/button_record_video"/>
+
+  <Button xmlns:android="http://schemas.android.com/apk/res/android"
+	  android:id="@+id/button_record_sound"
+	  android:layout_width="wrap_content"
+	  android:layout_height="wrap_content"
+	  android:text="@string/button_record_sound"/>
+
+</LinearLayout>
