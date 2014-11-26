@@ -105,7 +105,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         return super.onOptionsItemSelected(item);
     }
 
-    public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
+    private class AppSectionsPagerAdapter extends FragmentPagerAdapter {
 
         public AppSectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -128,7 +128,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return "Section " + (position + 1);
+            switch (position) {
+            case 0:
+                return getText(R.string.gather_evidence);
+            default:
+                return getText(R.string.evidence);
+            }
         }
     }
 
