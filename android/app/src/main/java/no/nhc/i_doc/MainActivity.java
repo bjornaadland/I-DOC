@@ -38,18 +38,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        DocumentDB db = DocumentDB.get(this);
-
-        if (db != null) {
-            DocumentDB.List l = db.getDocumentList();
-            for (int i = 0; i < l.getCount(); ++i) {
-                Document d = l.getDocument(i);
-                Log.d(TAG, "document: " + d.getTitle());
-            }
-        } else {
-            Log.e(TAG, "could not create database");
-        }
-
         mAppSectionsPagerAdapter = new AppSectionsPagerAdapter(getSupportFragmentManager());
 
         final ActionBar actionBar = getActionBar();
