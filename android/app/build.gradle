@@ -32,4 +32,7 @@ dependencies {
 
     // The following is added for couchbase
     compile 'com.couchbase.lite:couchbase-lite-android:1.0.3'
+
+    // The following is added for universal image loader
+    compile 'com.nostra13.universalimageloader:universal-image-loader:1.9.3'
 }

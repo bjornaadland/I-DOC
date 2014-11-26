@@ -15,6 +15,10 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -66,6 +70,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                     actionBar.newTab()
                             .setText(mAppSectionsPagerAdapter.getPageTitle(i))
                             .setTabListener(this));
+        }
+
+        ImageLoader imageLoader = ImageLoader.getInstance();
+        if (imageLoader.isInited() == false) {
+            imageLoader.init(ImageLoaderConfiguration.createDefault(this));
         }
     }
 
@@ -155,7 +164,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 );
             
             // Save a file: path for use with ACTION_VIEW intents
-            mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+            mCurrentPhotoPath = "file://" + image.getAbsolutePath();
             return image;
         } 
         catch (IOException e) {

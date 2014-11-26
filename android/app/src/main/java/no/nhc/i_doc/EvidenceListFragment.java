@@ -3,14 +3,20 @@ package no.nhc.i_doc;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.nostra13.universalimageloader.core.ImageLoader;
+
 class EvidenceAdapter extends BaseAdapter {
+    static final String TAG = "EvidenceAdapter";
     private final DocumentDB.List evidenceList;
 
     public EvidenceAdapter(DocumentDB.List evidenceList) {
@@ -45,8 +51,37 @@ class EvidenceAdapter extends BaseAdapter {
                     getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.item_evidence, parent, false);
         }
+
+        Document document = evidenceList.getDocument(position);
+
         TextView titleTextView = (TextView) convertView.findViewById(R.id.titleTextView);
-        titleTextView.setText(evidenceList.getDocument(position).getTitle());
+        String title = document.getTitle();
+        if (title.length() > 0) {
+            titleTextView.setText(title);
+        } else {
+            titleTextView.setText("No title yet..");
+        }
+
+        ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView);
+        java.util.List<String> files = document.getFiles();
+        if (files.size() > 0) {
+            String fileUri = files.get(0);
+            String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
+            String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            if (type.startsWith("image") || type.startsWith("video")) {
+                ImageLoader.getInstance().displayImage(fileUri, imageView);
+            } else if (type.startsWith("audio")) {
+                // TODO: Display audio icon
+            } else {
+                // TODO: Display generic icon
+            }
+        } else {
+            // TODO: Display generic icon
+        }
+
+//        TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
+//        descriptionTextView.setText(document.....)
+
         return convertView;
     }
 }
