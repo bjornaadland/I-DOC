@@ -32,6 +32,9 @@ public class CouchDocumentDB extends DocumentDB
     private Manager manager;
     private Database database;
 
+    /**
+     *  Couchbase representation of a Document
+     */
     private static final class CouchDocument implements Document
     {
         private Object mId;
@@ -129,6 +132,9 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    /**
+     *  class wrapping a LiveQuery
+     */
     private static final class CouchDocumentList implements DocumentDB.List {
         private LiveQuery liveQuery;
         private QueryEnumerator enumerator;
@@ -179,11 +185,21 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    /**
+     *
+     */
     public CouchDocumentDB(android.content.Context context) throws RuntimeException {
         try {
             manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
             database = manager.getDatabase("idoc");
             mSingletonDatabase = database;
+
+            /**** DEVELOPMENT CODE: ****/
+            try {
+                database.delete();
+            } catch (CouchbaseLiteException e) {
+            }
+            /**** END */
         } catch (IOException e) {
             throw new RuntimeException("could not create database manager, IOException");
         } catch (CouchbaseLiteException e) {
@@ -214,27 +230,7 @@ public class CouchDocumentDB extends DocumentDB
 
     public DocumentDB.List getDocumentList()
     {
-        try {
-            database.delete();
-        } catch (CouchbaseLiteException e) {
-        }
-
-        try {
-            Query q = getQuery();
-            QueryEnumerator qe = q.run();
-
-            if (qe.getCount() == 0) {
-                addTestDocs();
-                // rerun??
-                q = getQuery();
-                qe = q.run();
-            }
-
-            return new CouchDocumentList(q.toLiveQuery());
-        } catch (CouchbaseLiteException e) {
-            Log.e(TAG, "problem running query");
-            return null;
-        }
+        return new CouchDocumentList(getQuery().toLiveQuery());
     }
 
     public Document createDocument()
