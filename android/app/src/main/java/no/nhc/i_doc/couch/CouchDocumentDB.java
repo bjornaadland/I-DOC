@@ -62,6 +62,8 @@ public class CouchDocumentDB extends DocumentDB
                     Message.obtain(mChangedHandler, 0).sendToTarget();
                 }
             });
+
+            liveQuery.start();
         }
 
         public int getCount() {

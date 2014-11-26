@@ -116,8 +116,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             switch (i) {
                 case 0:
                     return new CaptureFragment();
+                case 1:
+                    return new EvidenceListFragment();
                 default:
-                    return new CaptureFragment();
+                    return null;
             }
         }
 
