@@ -36,8 +36,7 @@ public class CouchDocumentDB extends DocumentDB
     {
         private Object mId;
         private String mTitle;
-        private java.util.List<String> mFiles;
-        com.couchbase.lite.Document mCouchDoc;
+        UnsavedRevision mRev;
 
         public CouchDocument(Object id, String title)
         {
@@ -45,23 +44,30 @@ public class CouchDocumentDB extends DocumentDB
             mTitle = title;
         }
 
-        private void load()
+        /**
+         *  Creates an UnsavedRevision that contains the document properties
+         *  both for reading and manipulation.
+         */
+        public UnsavedRevision getRevision()
         {
-            mFiles = new ArrayList<String>();
+            if (mRev == null) {
+                if (mId == null) {
+                    com.couchbase.lite.Document doc = mSingletonDatabase.createDocument();
+                    mRev = doc.createRevision();
 
-            if (mId != null) {
-                mCouchDoc = mSingletonDatabase.getDocument((String)mId);
+                    Map<String, Object> props = new HashMap<String, Object>();
 
-                Map<String, Object> props = mCouchDoc.getProperties();
-                java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+                    props.put("title", mTitle);
+                    props.put("files", new ArrayList<Object>());
 
-                for (Object o : files) {
-                    Map<String, Object> file = (Map<String, Object>)o;
-                    String uri = (String)file.get("uri");
-
-                    mFiles.add(uri);
+                    mRev.setProperties(props);
+                } else {
+                    com.couchbase.lite.Document doc = mSingletonDatabase.getDocument((String)mId);
+                    mRev = doc.createRevision();
                 }
             }
+
+            return mRev;
         }
 
         public String getTitle()
@@ -85,19 +91,36 @@ public class CouchDocumentDB extends DocumentDB
 
         public java.util.List<String> getFiles()
         {
-            if (mFiles == null) {
-                load();
+            Map<String, Object> props = getRevision().getProperties();
+            java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+
+            ArrayList<String> ret = new ArrayList<String>();
+
+            for (Object o : files) {
+                Map<String, Object> file = (Map<String, Object>)o;
+                ret.add((String)file.get("uri"));
             }
 
-            return mFiles;
+            return ret;
         }
 
         public void addFile(String file)
         {
-            if (mFiles == null) {
-                getFiles();
+            Map<String, Object> props = getRevision().getProperties();
+            java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+            Map<String, Object> fileProps = new HashMap<String, Object>();
+
+            fileProps.put("uri", file);
+            fileProps.put("datetime", "0");
+            fileProps.put("description", "");
+            {
+                Map<String, Object> loc = new HashMap<String, Object>();
+                loc.put("lat", 0);
+                loc.put("long", 0);
+                fileProps.put("location", loc);
             }
-            mFiles.add(file);
+
+            files.add(file);
         }
 
         public Object getID()
@@ -222,36 +245,9 @@ public class CouchDocumentDB extends DocumentDB
     public void saveDocument(Document d)
     {
         CouchDocument cDoc = (CouchDocument)d;
-        Map<String, Object> prop = new HashMap<String, Object>();
-        ArrayList<Object> files = new ArrayList<Object>();
+        UnsavedRevision rev = cDoc.getRevision();
 
-        for (String fn : cDoc.getFiles()) {
-            Map<String, Object> file = new HashMap<String, Object>();
-            file.put("uri", fn);
-            file.put("datetime", "0");
-            file.put("description", "");
-            {
-                Map<String, Object> loc = new HashMap<String, Object>();
-                loc.put("lat", 0);
-                loc.put("long", 0);
-                file.put("location", loc);
-            }
-            files.add(file);
-        }
-
-        prop.put("title", cDoc.getTitle());
-        prop.put("files", files);
-
-        com.couchbase.lite.Document cblDoc;
-
-        if (cDoc.getID() == null) {
-            cblDoc = database.createDocument();
-        } else {
-            cblDoc = database.getDocument((String)cDoc.getID());
-        }
-
-        UnsavedRevision rev = cblDoc.createRevision();
-        rev.setUserProperties(prop);
+        rev.getProperties().put("title", cDoc.getTitle());
 
         try {
             rev.save();
