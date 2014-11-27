@@ -66,7 +66,7 @@ public class CaptureFragment extends Fragment {
         return fragmentView;
     }
 
-    static String mCurrentPhotoPath;
+    String mCurrentPhotoPath;
     
     private File createImageFile()  {
         try {
