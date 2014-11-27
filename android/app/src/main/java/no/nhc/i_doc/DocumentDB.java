@@ -3,6 +3,9 @@ package no.nhc.i_doc;
 import android.content.Context;
 import android.net.Uri;
 
+import java.io.File;
+
+
 /**
  *  DocumentDB concerns the set of stored documents,
  *  and manages adding and removing of documents from the database.
@@ -56,4 +59,16 @@ public abstract class DocumentDB
      *  Save a new or update an already existing Document
      */
     abstract void saveDocument(Document d);
+
+    /**
+     * Delete this document and the associated files.
+     */
+    void deleteDocument(Document d) {
+        // Delete associated files.
+        for (String f : d.getFiles()) {
+            (new File(f)).delete();
+        }
+        // TODO: also delete the actual document from the DB.
+    }
+
 }
