@@ -2,7 +2,10 @@ package no.nhc.i_doc;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -72,9 +75,12 @@ class EvidenceAdapter extends BaseAdapter {
             String fileUri = files.get(0);
             String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
             String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-            if (type.startsWith("image") || type.startsWith("video")) {
+            if (type.startsWith("image/")) {
                 ImageLoader.getInstance().displayImage(fileUri, imageView);
-            } else if (type.startsWith("audio")) {
+            } else if (type.startsWith("video/")) {
+                Bitmap videoThumbnail = ThumbnailUtils.createVideoThumbnail(fileUri.substring(7), MediaStore.Video.Thumbnails.MICRO_KIND);
+                imageView.setImageBitmap(videoThumbnail);
+            } else if (type.startsWith("audio/")) {
                 // TODO: Display audio icon
             } else {
                 // TODO: Display generic icon
