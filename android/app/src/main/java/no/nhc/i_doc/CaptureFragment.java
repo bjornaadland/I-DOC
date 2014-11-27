@@ -2,7 +2,8 @@ package no.nhc.i_doc;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,7 +16,9 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -172,11 +175,15 @@ public class CaptureFragment extends Fragment {
             Document doc = db.createDocument();
             doc.addFile(mCurrentVideoPath);
             db.saveDocument(doc);
-/*
-            Uri videoUri = data.getData();
-            mVideoView.setVideoURI(videoUri);
-            mVideoView.start();
-*/
+
+            // Create and store a thumbnail
+            try {
+                Bitmap videoThumbnail = ThumbnailUtils.createVideoThumbnail(mCurrentVideoPath.substring(7), MediaStore.Video.Thumbnails.MINI_KIND);
+                OutputStream oStream = new FileOutputStream(mCurrentVideoPath.substring(7) + ".jpg");
+                videoThumbnail.compress(Bitmap.CompressFormat.JPEG, 100, oStream);
+            } catch (Exception e) {
+                // Something went wrong..
+            }
             break;
         }}
     }
