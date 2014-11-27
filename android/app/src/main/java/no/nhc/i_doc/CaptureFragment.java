@@ -27,7 +27,7 @@ public class CaptureFragment extends Fragment {
 
 
     public CaptureFragment() {
-        // Required empty public constructor
+        setRetainInstance(true);
     }
 
     @Override
@@ -66,13 +66,7 @@ public class CaptureFragment extends Fragment {
         return fragmentView;
     }
 
-    // Workaround: Store the path name as static, in case
-    // MainActivity is recreated while the camera service is running.
-    // This will happen if the orientation of the screen is changed.
-    // The correct way of handling path name would be to retrieve it
-    // from the Intent data received in onActivityResult, but that
-    // doesn't work due to a bug in Android. The Intent data is NULL..
-    static String sCurrentPhotoPath;
+    static String mCurrentPhotoPath;
     
     private File createImageFile()  {
         try {
@@ -93,8 +87,8 @@ public class CaptureFragment extends Fragment {
             );
 
             // Save a file: path for use with ACTION_VIEW intents
-            sCurrentPhotoPath = "file://" + image.getAbsolutePath();
-            Log.d(TAG, "path: " + sCurrentPhotoPath);
+            mCurrentPhotoPath = "file://" + image.getAbsolutePath();
+            Log.d(TAG, "path: " + mCurrentPhotoPath);
             return image;
         }
         catch (IOException e) {
@@ -133,7 +127,7 @@ public class CaptureFragment extends Fragment {
         case REQUEST_IMAGE_CAPTURE:
             DocumentDB db = DocumentDB.get(getActivity());
             Document doc = db.createDocument();
-            doc.addFile(sCurrentPhotoPath);
+            doc.addFile(mCurrentPhotoPath);
             db.saveDocument(doc);
 /*
             Bundle extras = data.getExtras();
