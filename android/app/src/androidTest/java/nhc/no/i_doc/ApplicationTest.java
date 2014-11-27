@@ -1,4 +1,4 @@
-package nhc.no.i_doc;
+package no.nhc.i_doc;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

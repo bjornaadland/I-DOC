@@ -16,6 +16,7 @@ import com.couchbase.lite.Mapper;
 import com.couchbase.lite.Query;
 import com.couchbase.lite.QueryEnumerator;
 import com.couchbase.lite.QueryRow;
+import com.couchbase.lite.SavedRevision;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.View;
 
@@ -23,16 +24,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 public class CouchDocumentDB extends DocumentDB
 {
     public static final String TAG = "CouchDocumentDB";
     public static final String UriScheme = "evidence";
 
-    public static Database mSingletonDatabase;
+    public static Database sSingletonDatabase;
 
-    private Manager manager;
-    private Database database;
+    private Manager mManager;
+    private Database mDatabase;
+
+    WeakHashMap<CouchDocumentList, Integer> mDocLists =
+        new WeakHashMap<CouchDocumentList, Integer>();
 
     /**
      *  Couchbase representation of a Document
@@ -47,6 +52,19 @@ public class CouchDocumentDB extends DocumentDB
             mId = id;
         }
 
+        public void save()
+        {
+            UnsavedRevision rev = getRevision();
+            mRev = null;
+
+            try {
+                SavedRevision sr = rev.save();
+                mId = sr.getDocument().getId();
+            } catch (CouchbaseLiteException e) {
+                throw new RuntimeException("problem saving document");
+            }
+        }
+
         /**
          *  Creates an UnsavedRevision that contains the document properties
          *  both for reading and manipulation.
@@ -55,7 +73,7 @@ public class CouchDocumentDB extends DocumentDB
         {
             if (mRev == null) {
                 if (mId == null) {
-                    com.couchbase.lite.Document doc = mSingletonDatabase.createDocument();
+                    com.couchbase.lite.Document doc = sSingletonDatabase.createDocument();
                     mRev = doc.createRevision();
 
                     Map<String, Object> props = new HashMap<String, Object>();
@@ -66,17 +84,12 @@ public class CouchDocumentDB extends DocumentDB
 
                     mRev.setProperties(props);
                 } else {
-                    com.couchbase.lite.Document doc = mSingletonDatabase.getDocument((String)mId);
+                    com.couchbase.lite.Document doc = sSingletonDatabase.getDocument((String)mId);
                     mRev = doc.createRevision();
                 }
             }
 
             return mRev;
-        }
-
-        public void resetRevision()
-        {
-            mRev = null;
         }
 
         public Uri getUri()
@@ -147,7 +160,7 @@ public class CouchDocumentDB extends DocumentDB
             files.add(fileProps);
         }
 
-        public Object getID()
+        public Object getId()
         {
             return mId;
         }
@@ -170,8 +183,7 @@ public class CouchDocumentDB extends DocumentDB
             liveQuery.addChangeListener(new LiveQuery.ChangeListener() {
                 @Override
                 public void changed(final LiveQuery.ChangeEvent event) {
-                    Log.d(TAG, "LiveQuery changed...");
-                    Message.obtain(mChangedHandler, 0).sendToTarget();
+                    notifyChange();
                 }
             });
 
@@ -189,6 +201,15 @@ public class CouchDocumentDB extends DocumentDB
 
         public void setListener(DocumentDB.Listener l) {
             listener = l;
+        }
+
+        /**
+         *  Notify a change in the data set or to individual documents
+         *  contained in the data set. This method is thread safe.
+         */
+        public void notifyChange()
+        {
+            Message.obtain(mChangedHandler, 0).sendToTarget();
         }
 
         /**
@@ -212,13 +233,13 @@ public class CouchDocumentDB extends DocumentDB
      */
     public CouchDocumentDB(android.content.Context context) throws RuntimeException {
         try {
-            manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
-            database = manager.getDatabase("idoc");
-            mSingletonDatabase = database;
+            mManager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
+            mDatabase = mManager.getDatabase("idoc");
+            sSingletonDatabase = mDatabase;
 
             /**** DEVELOPMENT CODE: ****/
             try {
-                database.delete();
+                mDatabase.delete();
             } catch (CouchbaseLiteException e) {
             }
             /**** END */
@@ -230,7 +251,7 @@ public class CouchDocumentDB extends DocumentDB
     }
 
     private Query getQuery() {
-        View v = database.getView("list");
+        View v = mDatabase.getView("list");
         if (v.getMap() == null) {
             v.setMap(new Mapper() {
                 public void map(Map<String, Object> document, Emitter emitter) {
@@ -254,7 +275,10 @@ public class CouchDocumentDB extends DocumentDB
     {
         LiveQuery lq = getQuery().toLiveQuery();
         lq.setDescending(true);
-        return new CouchDocumentList(lq);
+
+        CouchDocumentList cdl = new CouchDocumentList(lq);
+        mDocLists.put(cdl, 0);
+        return cdl;
     }
 
     public Document createDocument()
@@ -271,16 +295,19 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
-    public void saveDocument(Document d)
+    public void saveDocument(Document doc)
     {
-        CouchDocument cDoc = (CouchDocument)d;
-        UnsavedRevision rev = cDoc.getRevision();
-
-        try {
-            cDoc.resetRevision();
-            rev.save();
-        } catch (CouchbaseLiteException e) {
-            throw new RuntimeException("problem saving document");
+        CouchDocument cd = (CouchDocument)doc;
+        if (cd.getId() != null) {
+            cd.save();
+            // As this is an already existing document, notify existing document lists
+            // of a change to their data set.
+            for (CouchDocumentList cdl : mDocLists.keySet()) {
+                cdl.notifyChange();
+            }
+        } else {
+            // A new document is automatically picked up by LiveQuery listener
+            cd.save();
         }
     }
 }

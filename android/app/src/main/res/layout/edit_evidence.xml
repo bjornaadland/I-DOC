@@ -13,8 +13,7 @@
           android:id="@+id/editTitle"
           android:hint="@string/edit_title"
           android:layout_height="wrap_content"
-          android:layout_width="fill_parent"
-          android:text="hei">
+          android:layout_width="fill_parent">
       </EditText>
     </LinearLayout>
 </ScrollView>
