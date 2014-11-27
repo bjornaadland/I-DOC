@@ -67,7 +67,8 @@ public class CaptureFragment extends Fragment {
     }
 
     String mCurrentPhotoPath;
-    
+    String mCurrentVideoPath;
+
     private File createImageFile()  {
         try {
             // Create an image file name
@@ -96,6 +97,35 @@ public class CaptureFragment extends Fragment {
         }
     }
 
+    private File createVideoFile()  {
+        try {
+            // Create an video file name
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String videoFileName = "MP4_" + timeStamp + "_";
+            //File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+            File storageDir = getActivity().getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+//            File storageDir = getFilesDir();
+
+            Log.d(TAG, "externalStoragePublicDirectory: " + Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES));
+            Log.d(TAG, "getFilesDir: " + getActivity().getFilesDir());
+            Log.d(TAG, "getExternalFilesDir: " + getActivity().getExternalFilesDir(Environment.DIRECTORY_MOVIES));
+            File video = File.createTempFile(
+                    videoFileName,  /* prefix */
+                    ".mp4",         /* suffix */
+                    storageDir      /* directory */
+            );
+
+            // Save a file: path for use with ACTION_VIEW intents
+            mCurrentVideoPath = "file://" + video.getAbsolutePath();
+            Log.d(TAG, "path: " + mCurrentVideoPath);
+            return video;
+        }
+        catch (IOException e) {
+            return null;
+        }
+    }
+
+
     public void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (takePictureIntent.resolveActivity(getActivity().getPackageManager()) != null) {
@@ -107,6 +137,7 @@ public class CaptureFragment extends Fragment {
     public void dispatchRecordVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+            takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(createVideoFile()));
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
     }
@@ -124,7 +155,7 @@ public class CaptureFragment extends Fragment {
             return;
         }
         switch (requestCode) {
-        case REQUEST_IMAGE_CAPTURE:
+        case REQUEST_IMAGE_CAPTURE: {
             DocumentDB db = DocumentDB.get(getActivity());
             Document doc = db.createDocument();
             doc.addFile(mCurrentPhotoPath);
@@ -135,14 +166,19 @@ public class CaptureFragment extends Fragment {
             mImageView.setImageBitmap(imageBitmap);
 */
             break;
-        case REQUEST_VIDEO_CAPTURE:
+        }
+        case REQUEST_VIDEO_CAPTURE: {
+            DocumentDB db = DocumentDB.get(getActivity());
+            Document doc = db.createDocument();
+            doc.addFile(mCurrentVideoPath);
+            db.saveDocument(doc);
 /*
             Uri videoUri = data.getData();
             mVideoView.setVideoURI(videoUri);
             mVideoView.start();
 */
             break;
-        }
+        }}
     }
 
 
