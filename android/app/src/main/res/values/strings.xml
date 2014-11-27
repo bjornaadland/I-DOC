@@ -12,5 +12,6 @@
     <string name="button_take_picture">Take picture</string>
     <string name="gather_evidence">Gather evidence</string>
     <string name="evidence">Evidence</string>
+    <string name="evidence_delete">Delete</string>
 
 </resources>
