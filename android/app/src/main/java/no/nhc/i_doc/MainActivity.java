@@ -136,8 +136,13 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         }
     }
 
-
-    String mCurrentPhotoPath;
+    // Workaround: Store the path name as static, in case
+    // MainActivity is recreated while the camera service is running.
+    // This will happen if the orientation of the screen is changed.
+    // The correct way of handling path name would be to retrieve it
+    // from the Intent data received in onActivityResult, but that
+    // doesn't work due to a bug in Android. The Intent data is NULL..
+    static String sCurrentPhotoPath;
     
     private File createImageFile()  {
         try {
@@ -146,15 +151,15 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
             String imageFileName = "JPEG_" + timeStamp + "_";
             File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
             File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                storageDir      /* directory */
-                );
-            
+                    imageFileName,  /* prefix */
+                    ".jpg",         /* suffix */
+                    storageDir      /* directory */
+            );
+
             // Save a file: path for use with ACTION_VIEW intents
-            mCurrentPhotoPath = "file://" + image.getAbsolutePath();
+            sCurrentPhotoPath = "file://" + image.getAbsolutePath();
             return image;
-        } 
+        }
         catch (IOException e) {
             return null;
         }
@@ -191,7 +196,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         case REQUEST_IMAGE_CAPTURE:
             DocumentDB db = DocumentDB.get(this);
             Document doc = db.createDocument();
-            doc.addFile(mCurrentPhotoPath);
+            doc.addFile(sCurrentPhotoPath);
             db.saveDocument(doc);
 /*
             Bundle extras = data.getExtras();
