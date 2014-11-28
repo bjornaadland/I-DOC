@@ -74,6 +74,7 @@ class EvidenceAdapter extends BaseAdapter {
         }
 
         ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView);
+        imageView.setImageDrawable(null);
         java.util.List<String> files = document.getFiles();
         if (files.size() > 0) {
             String fileUri = files.get(0);

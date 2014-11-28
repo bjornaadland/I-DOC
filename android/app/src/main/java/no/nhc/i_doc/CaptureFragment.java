@@ -13,7 +13,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,23 +44,22 @@ public class CaptureFragment extends Fragment {
         // Inflate the layout for this fragment
         View fragmentView = inflater.inflate(R.layout.fragment_capture, container, false);
 
-        Button button = (Button) fragmentView.findViewById(R.id.button_take_picture);
-        button.setOnClickListener(new View.OnClickListener() {
+        TextView text = (TextView) fragmentView.findViewById(R.id.text_take_picture);
+        text.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     dispatchTakePictureIntent();
                 }
             });
 
-        button = (Button) fragmentView.findViewById(R.id.button_record_video);
-        button.setOnClickListener(new View.OnClickListener() {
+        text = (TextView) fragmentView.findViewById(R.id.text_record_video);
+        text.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     dispatchRecordVideoIntent();
                 }
             });
 
-
-        button = (Button) fragmentView.findViewById(R.id.button_record_sound);
-        button.setOnClickListener(new View.OnClickListener() {
+        text = (TextView) fragmentView.findViewById(R.id.text_record_sound);
+        text.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     dispatchRecordSoundIntent();
                 }
