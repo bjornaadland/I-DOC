@@ -5,11 +5,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
 import android.widget.BaseAdapter;
+import android.widget.ListAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -108,6 +110,16 @@ public class EvidenceListFragment extends ListFragment {
         // Required empty public constructor
     }
 
+    private void deleteSelectedItems() {
+        ListView listView = getListView();
+        DocumentDB db = DocumentDB.get(getActivity());
+        ListAdapter adapter = getListAdapter();
+        SparseBooleanArray positions = listView.getCheckedItemPositions();
+        for (int i = 0; i < positions.size(); i++) { 
+            db.deleteDocument((Document)adapter.getItem(positions.keyAt(i)));
+        }
+    }
+
     private void setupMultiChoice() {
         ListView listView = getListView();
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
@@ -124,7 +136,7 @@ public class EvidenceListFragment extends ListFragment {
                     // Respond to clicks on the actions in the CAB
                     switch (item.getItemId()) {
                     case R.id.menu_evidence_delete:
-                        //deleteSelectedItems();
+                        deleteSelectedItems();
                         mode.finish(); // Action picked, so close the CAB
                         return true;
                     default:

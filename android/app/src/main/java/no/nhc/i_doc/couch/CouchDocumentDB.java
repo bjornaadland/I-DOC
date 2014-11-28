@@ -20,6 +20,7 @@ import com.couchbase.lite.SavedRevision;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.View;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,15 @@ public class CouchDocumentDB extends DocumentDB
                 mId = sr.getDocument().getId();
             } catch (CouchbaseLiteException e) {
                 throw new RuntimeException("problem saving document");
+            }
+        }
+
+        public boolean delete() {
+            com.couchbase.lite.Document doc = sSingletonDatabase.getDocument((String)mId);
+            try {
+                return doc.delete();
+            } catch (CouchbaseLiteException e) {
+                return false;
             }
         }
 
@@ -237,12 +247,6 @@ public class CouchDocumentDB extends DocumentDB
             mDatabase = mManager.getDatabase("idoc");
             sSingletonDatabase = mDatabase;
 
-            /**** DEVELOPMENT CODE: ****/
-            try {
-                mDatabase.delete();
-            } catch (CouchbaseLiteException e) {
-            }
-            /**** END */
         } catch (IOException e) {
             throw new RuntimeException("could not create database manager, IOException");
         } catch (CouchbaseLiteException e) {
@@ -295,6 +299,13 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    private void notifyListsChanged() {
+        // Notifiy all lists of change.
+        for (CouchDocumentList cdl : mDocLists.keySet()) {
+            cdl.notifyChange();
+        }
+    }
+
     public void saveDocument(Document doc)
     {
         CouchDocument cd = (CouchDocument)doc;
@@ -302,12 +313,22 @@ public class CouchDocumentDB extends DocumentDB
             cd.save();
             // As this is an already existing document, notify existing document lists
             // of a change to their data set.
-            for (CouchDocumentList cdl : mDocLists.keySet()) {
-                cdl.notifyChange();
-            }
+            notifyListsChanged();
         } else {
             // A new document is automatically picked up by LiveQuery listener
             cd.save();
         }
     }
+
+    public void deleteDocument(Document doc) {
+        // Delete associated files.
+        for (String f : doc.getFiles()) {
+            (new File(f)).delete();
+        }
+        CouchDocument cd = (CouchDocument)doc;
+        if (cd.delete()) {
+            notifyListsChanged();
+        }
+    }
+
 }

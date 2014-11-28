@@ -3,8 +3,6 @@ package no.nhc.i_doc;
 import android.content.Context;
 import android.net.Uri;
 
-import java.io.File;
-
 
 /**
  *  DocumentDB concerns the set of stored documents,
@@ -63,12 +61,6 @@ public abstract class DocumentDB
     /**
      * Delete this document and the associated files.
      */
-    void deleteDocument(Document d) {
-        // Delete associated files.
-        for (String f : d.getFiles()) {
-            (new File(f)).delete();
-        }
-        // TODO: also delete the actual document from the DB.
-    }
+    abstract void deleteDocument(Document d);
 
 }
