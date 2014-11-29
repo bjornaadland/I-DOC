@@ -2,6 +2,7 @@ package no.nhc.i_doc;
 
 import android.net.Uri;
 
+import java.lang.Enum;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -14,8 +15,6 @@ import java.util.ArrayList;
  */
 public abstract interface Document
 {
-    public static class Metadata {}
-
     abstract Uri getUri();
 
     /**
@@ -36,12 +35,12 @@ public abstract interface Document
     /**
      *  Retrieve the metadata associated with the document
      */
-    abstract Metadata getMetadata();
+    abstract List<Metadata> getMetadata();
 
     /**
      *  Set associated Metadata with the Document
      */
-    abstract void setMetadata(Metadata data);
+    abstract void addMetadata(Metadata data);
 
     /**
      * Get the files held by this document.

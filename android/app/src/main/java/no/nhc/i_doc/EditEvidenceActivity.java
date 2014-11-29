@@ -39,6 +39,26 @@ public class EditEvidenceActivity extends Activity {
             EditText t = (EditText) findViewById(R.id.editTitle);
             mDocument.setTitle(t.getText().toString());
 
+            Metadata person = DocumentDB.get(this).createMetadata();
+            person.set(Metadata.Person.FirstName, "hey");
+            person.set(Metadata.Person.LastName, "joe");
+
+            {
+                Metadata v = DocumentDB.get(this).createMetadata();
+                v.set(Metadata.Victim.Person, person);
+                mDocument.addMetadata(v);
+            }
+            {
+                Metadata s = DocumentDB.get(this).createMetadata();
+                s.set(Metadata.Suspect.Person, person);
+                mDocument.addMetadata(s);
+            }
+            {
+                Metadata w = DocumentDB.get(this).createMetadata();
+                w.set(Metadata.Witness.Person, person);
+                mDocument.addMetadata(w);
+            }
+
             DocumentDB.get(this).saveDocument(mDocument);
             Log.d(TAG, "... done saving");
         }

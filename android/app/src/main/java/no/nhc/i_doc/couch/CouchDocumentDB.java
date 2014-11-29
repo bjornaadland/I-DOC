@@ -22,6 +22,7 @@ import com.couchbase.lite.View;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,24 @@ public class CouchDocumentDB extends DocumentDB
     public static final String TAG = "CouchDocumentDB";
     public static final String UriScheme = "evidence";
 
+    public static final String ViewDocDate = "docdate";
+
+    public static final String KeyType = "type";
+    public static final String KeyTitle = "title";
+    public static final String KeyTimestamp = "timestamp";
+    public static final String KeyFiles = "files";
+    public static final String KeyUri = "uri";
+    public static final String KeyDescription = "description";
+    public static final String KeyLocation = "location";
+    public static final String KeyLat = "lat";
+    public static final String KeyLong = "long";
+    public static final String KeyMeta = "meta";
+
+    public static final String TypeDoc = "doc";
+
     public static Database sSingletonDatabase;
+
+    public static Map<Object, MetaMapper> sMetaMappers;
 
     private Manager mManager;
     private Database mDatabase;
@@ -57,6 +75,8 @@ public class CouchDocumentDB extends DocumentDB
         {
             UnsavedRevision rev = getRevision();
             mRev = null;
+
+            Log.d(TAG, "saving document " + rev.getProperties().toString());
 
             try {
                 SavedRevision sr = rev.save();
@@ -88,9 +108,11 @@ public class CouchDocumentDB extends DocumentDB
 
                     Map<String, Object> props = new HashMap<String, Object>();
 
-                    props.put("title", "");
-                    props.put("timestamp", System.currentTimeMillis() / 1000);
-                    props.put("files", new ArrayList<Object>());
+                    props.put(KeyType, TypeDoc);
+                    props.put(KeyTitle, "");
+                    props.put(KeyTimestamp, System.currentTimeMillis() / 1000);
+                    props.put(KeyFiles, new ArrayList<Object>());
+                    props.put(KeyMeta, new ArrayList<Object>());
 
                     mRev.setProperties(props);
                 } else {
@@ -114,38 +136,53 @@ public class CouchDocumentDB extends DocumentDB
 
         public String getTitle()
         {
-            return (String)getRevision().getProperties().get("title");
+            return (String)getRevision().getProperties().get(KeyTitle);
         }
 
         public void setTitle(String title)
         {
-            getRevision().getProperties().put("title", title);
+            getRevision().getProperties().put(KeyTitle, title);
         }
 
         public int getTimestamp()
         {
-            return (int)getRevision().getProperties().get("timestamp");
+            return (int)getRevision().getProperties().get(KeyTimestamp);
         }
 
-        public Document.Metadata getMetadata()
+        public java.util.List<Metadata> getMetadata()
         {
-            return null;
+            ArrayList<Metadata> l = new ArrayList<Metadata>();
+            Map<String, Object> props = getRevision().getProperties();
+
+            for (Object o : (java.util.List<Object>)props.get(KeyMeta)) {
+                l.add(new CouchMetadata((Map<String, Object>)o));
+            }
+
+            return l;
         }
 
-        public void setMetadata(Document.Metadata metadata)
+        public void addMetadata(Metadata metadata)
         {
+            CouchMetadata cm = (CouchMetadata)metadata;
+            Map<String, Object> props = getRevision().getProperties();
+
+            if (cm.getType() == null) {
+                throw new RuntimeException("cannot add an empty metadata object");
+            }
+
+            ((java.util.List<Object>)props.get(KeyMeta)).add(cm.getProperties());
         }
 
         public java.util.List<String> getFiles()
         {
             Map<String, Object> props = getRevision().getProperties();
-            java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+            java.util.List<Object> files = (java.util.List<Object>)props.get(KeyFiles);
 
             ArrayList<String> ret = new ArrayList<String>();
 
             for (Object o : files) {
                 Map<String, Object> file = (Map<String, Object>)o;
-                ret.add((String)file.get("uri"));
+                ret.add((String)file.get(KeyUri));
             }
 
             return ret;
@@ -154,17 +191,17 @@ public class CouchDocumentDB extends DocumentDB
         public void addFile(String file)
         {
             Map<String, Object> props = getRevision().getProperties();
-            java.util.List<Object> files = (java.util.List<Object>)props.get("files");
+            java.util.List<Object> files = (java.util.List<Object>)props.get(KeyFiles);
             Map<String, Object> fileProps = new HashMap<String, Object>();
 
-            fileProps.put("uri", file);
-            fileProps.put("timestamp", System.currentTimeMillis() / 1000);
-            fileProps.put("description", "");
+            fileProps.put(KeyUri, file);
+            fileProps.put(KeyTimestamp, System.currentTimeMillis() / 1000);
+            fileProps.put(KeyDescription, "");
             {
                 Map<String, Object> loc = new HashMap<String, Object>();
-                loc.put("lat", 0);
-                loc.put("long", 0);
-                fileProps.put("location", loc);
+                loc.put(KeyLat, 0);
+                loc.put(KeyLong, 0);
+                fileProps.put(KeyLocation, loc);
             }
 
             files.add(fileProps);
@@ -173,6 +210,101 @@ public class CouchDocumentDB extends DocumentDB
         public Object getId()
         {
             return mId;
+        }
+    }
+
+    /**
+     *  Metadata implementation
+     */
+    private static final class CouchMetadata implements Metadata {
+        private java.lang.Class mType;
+        private Map<String, Object> mProperties;
+
+        public java.lang.Class getType() { return mType; }
+
+        public Map<String, Object> getProperties() {
+            return mProperties;
+        }
+
+        public CouchMetadata() {
+            mProperties = new HashMap<String, Object>();
+        }
+
+        public CouchMetadata(Map<String, Object> props) {
+            switch ((String)props.get(KeyType)) {
+            case "person":
+                mType = Metadata.Person.class;
+                break;
+            case "victim":
+                mType = Metadata.Victim.class;
+                break;
+            case "suspect":
+                mType = Metadata.Suspect.class;
+                break;
+            case "witness":
+                mType = Metadata.Witness.class;
+                break;
+            case "protectedobject":
+                mType = Metadata.ProtectedObject.class;
+                break;
+            case "context":
+                mType = Metadata.Context.class;
+                break;
+            case "orgunit":
+                mType = Metadata.OrgUnit.class;
+                break;
+            default:
+                throw new RuntimeException("programming error");
+            }
+            mProperties = props;
+        }
+
+        static String getKey(Enum e) {
+            return e.toString().toLowerCase();
+        }
+
+        public void set(Enum e, Object value) {
+            if (mType == null) {
+                mProperties.put(KeyType, e.getClass().getSimpleName().toLowerCase());
+                mType = e.getClass();
+            } else {
+                if (e.getClass() != mType) {
+                    throw new RuntimeException("type mismatch: had " + mType.getName() + ", tried to set " + e.getClass().getName() + " property");
+                }
+            }
+
+            MetaMapper mapper = sMetaMappers.get(e);
+            Log.d(TAG, "mapper for enum class " + e.getClass().getName() + ": " + mapper);
+            mProperties.put(getKey(e), mapper == null ? value : mapper.mapToDb(value));
+        }
+
+        public Object get(Enum e) {
+            if (mType != null) {
+                if (e.getClass() != mType) {
+                    throw new RuntimeException("type mismatch");
+                }
+            } else {
+                throw new RuntimeException("object not initialized");
+            }
+
+            MetaMapper mapper = sMetaMappers.get(e);
+            Object value = mProperties.get(getKey(e));
+            return mapper == null ? value : mapper.mapToUser(value);
+        }
+    }
+
+    private interface MetaMapper {
+        Object mapToDb(Object o);
+        Object mapToUser(Object o);
+    }
+
+    private class PersonMapper implements MetaMapper {
+        public Object mapToDb(Object o) {
+            return ((CouchMetadata)o).getProperties();
+        }
+
+        public Object mapToUser(Object o) {
+            return new CouchMetadata((Map<String, Object>)o);
         }
     }
 
@@ -247,6 +379,10 @@ public class CouchDocumentDB extends DocumentDB
             mDatabase = mManager.getDatabase("idoc");
             sSingletonDatabase = mDatabase;
 
+            sMetaMappers = new HashMap<Object, MetaMapper>();
+            sMetaMappers.put(Metadata.Victim.Person, new PersonMapper());
+            sMetaMappers.put(Metadata.Suspect.Person, new PersonMapper());
+            sMetaMappers.put(Metadata.Witness.Person, new PersonMapper());
         } catch (IOException e) {
             throw new RuntimeException("could not create database manager, IOException");
         } catch (CouchbaseLiteException e) {
@@ -255,11 +391,13 @@ public class CouchDocumentDB extends DocumentDB
     }
 
     private Query getQuery() {
-        View v = mDatabase.getView("list");
+        View v = mDatabase.getView(ViewDocDate);
         if (v.getMap() == null) {
             v.setMap(new Mapper() {
                 public void map(Map<String, Object> document, Emitter emitter) {
-                    emitter.emit(document.get("timestamp"), document.get("_id"));
+                    if (document.get(KeyType).equals(TypeDoc)) {
+                        emitter.emit(document.get("timestamp"), document.get("_id"));
+                    }
                 }
             }, "1");
         }
@@ -331,4 +469,8 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    public Metadata createMetadata()
+    {
+        return new CouchMetadata();
+    }
 }
