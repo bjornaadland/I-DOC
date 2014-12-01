@@ -115,7 +115,9 @@ public class CouchDocumentDB extends DocumentDB
 
                     mRev.setProperties(props);
                 } else {
-                    com.couchbase.lite.Document doc = sSingletonDatabase.getDocument((String)mId);
+                    com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument((String)mId);
+                    // We do not tolerate deleted documents.
+                    if (doc == null) return null;
                     mRev = doc.createRevision();
                 }
             }
@@ -337,7 +339,14 @@ public class CouchDocumentDB extends DocumentDB
 
         public Document getDocument(int position) {
             QueryRow row = enumerator.getRow(position);
-            return new CouchDocument(row.getValue());
+            CouchDocument cd = new CouchDocument(row.getValue());
+
+            // must check if the document is valid
+            if (cd.getRevision() != null) {
+                return cd;
+            } else {
+                return null;
+            }
         }
 
         public void setListener(DocumentDB.Listener l) {
@@ -463,9 +472,7 @@ public class CouchDocumentDB extends DocumentDB
             (new File(f)).delete();
         }
         CouchDocument cd = (CouchDocument)doc;
-        if (cd.delete()) {
-            notifyListsChanged();
-        }
+        cd.delete();
     }
 
     public Metadata createMetadata()
