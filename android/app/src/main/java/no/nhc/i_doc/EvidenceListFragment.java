@@ -66,39 +66,46 @@ class EvidenceAdapter extends BaseAdapter {
         Document document = evidenceList.getDocument(position);
 
         TextView titleTextView = (TextView) convertView.findViewById(R.id.titleTextView);
-        String title = document.getTitle();
-        if (title.length() > 0) {
-            titleTextView.setText(title);
-        } else {
-            titleTextView.setText("No title yet..");
-        }
-
         ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView);
-        imageView.setImageDrawable(null);
-        java.util.List<String> files = document.getFiles();
-        if (files.size() > 0) {
-            String fileUri = files.get(0);
-            String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
-            String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-            if (type.startsWith("image/")) {
-                ImageLoader.getInstance().displayImage(fileUri, imageView);
-            } else if (type.startsWith("video/")) {
-                // Load the thumbnail
-                ImageLoader.getInstance().displayImage(fileUri + ".jpg", imageView);
-            } else if (type.startsWith("audio/")) {
-                // TODO: Display audio icon
+        TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
+
+        if (document == null) {
+            titleTextView.setText("");
+            imageView.setImageDrawable(null);
+            descriptionTextView.setText("");
+        } else {
+            String title = document.getTitle();
+            if (title.length() > 0) {
+                titleTextView.setText(title);
+            } else {
+                titleTextView.setText("No title yet..");
+            }
+
+            imageView.setImageDrawable(null);
+            java.util.List<String> files = document.getFiles();
+            if (files.size() > 0) {
+                String fileUri = files.get(0);
+                String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
+                String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+                if (type.startsWith("image/")) {
+                    ImageLoader.getInstance().displayImage(fileUri, imageView);
+                } else if (type.startsWith("video/")) {
+                    // Load the thumbnail
+                    ImageLoader.getInstance().displayImage(fileUri + ".jpg", imageView);
+                } else if (type.startsWith("audio/")) {
+                    // TODO: Display audio icon
+                } else {
+                    // TODO: Display generic icon
+                }
             } else {
                 // TODO: Display generic icon
             }
-        } else {
-            // TODO: Display generic icon
-        }
 
-        {
-            TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
-            Date date = new Date(document.getTimestamp() * 1000L);
-            DateFormat f = DateFormat.getDateTimeInstance();
-            descriptionTextView.setText(f.format(date));
+            {
+                Date date = new Date(document.getTimestamp() * 1000L);
+                DateFormat f = DateFormat.getDateTimeInstance();
+                descriptionTextView.setText(f.format(date));
+            }
         }
 
         return convertView;
