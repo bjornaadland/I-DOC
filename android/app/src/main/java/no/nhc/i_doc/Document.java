@@ -2,7 +2,6 @@ package no.nhc.i_doc;
 
 import android.net.Uri;
 
-import java.lang.Enum;
 import java.util.List;
 import java.util.ArrayList;
 
