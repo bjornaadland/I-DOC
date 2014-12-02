@@ -8,6 +8,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.view.ViewGroup;
+import android.view.Menu;
+import android.view.MenuItem;
+
 
 public class ShowEvidenceActivity extends Activity {
     static final String TAG = "ShowEvidenceActivity";
@@ -51,6 +54,28 @@ public class ShowEvidenceActivity extends Activity {
         group = addGroup("Organizational unit");
         DocumentUtils.DisplayImage(mDocument, imageView);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_show_evidence, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.show_evidence_delete) {
+            Intent intent = new Intent(this, EditEvidenceActivity.class);
+            intent.setData(mDocument.getUri());
+            startActivity(intent);
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+
 
     private Document getDocument() {
         return DocumentDB.get(this).getDocument(getIntent().getData());

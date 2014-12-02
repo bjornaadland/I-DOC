@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".ShowEvidenceActivity">
+  <item
+      app:showAsAction="always"
+      android:id="@+id/show_evidence_delete"
+      android:icon="@android:drawable/ic_delete"
+      />
+</menu>

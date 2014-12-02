@@ -170,7 +170,6 @@ public class EvidenceListFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
-//        Intent intent = new Intent(getActivity(), EditEvidenceActivity.class);
         Intent intent = new Intent(getActivity(), ShowEvidenceActivity.class);
         Document doc = (Document)getListAdapter().getItem(position);
         intent.setData(doc.getUri());
