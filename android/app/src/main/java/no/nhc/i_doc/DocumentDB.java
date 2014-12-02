@@ -63,4 +63,8 @@ public abstract class DocumentDB
      */
     abstract void deleteDocument(Document d);
 
+    /**
+     * Create an empty metadata object to be attached to a document
+     */
+    abstract Metadata createMetadata();
 }
