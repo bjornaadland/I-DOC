@@ -24,6 +24,13 @@
             android:parentActivityName="no.nhc.i_doc.MainActivity">
         </activity>
 
+        <activity
+            android:name="no.nhc.i_doc.SettingsActivity"
+            android:label="@string/settings"
+            android:parentActivityName="no.nhc.i_doc.SettingsActivity">
+        </activity>
+
+
     </application>
 
   <uses-feature android:name="android.hardware.camera"
