@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@+id/edit_add_meta_victim"
+        android:title="@string/meta_victim" />
+  <item android:id="@+id/edit_add_meta_suspect"
+        android:title="@string/meta_suspect" />
+  <item android:id="@+id/edit_add_meta_witness"
+        android:title="@string/meta_witness" />
+  <item android:id="@+id/edit_add_meta_protectedobject"
+        android:title="@string/meta_protectedobject" />
+  <item android:id="@+id/edit_add_meta_context"
+        android:title="@string/meta_context" />
+  <item android:id="@+id/edit_add_meta_orgunit"
+        android:title="@string/meta_orgunit" />
+</menu>

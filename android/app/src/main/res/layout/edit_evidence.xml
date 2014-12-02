@@ -15,5 +15,17 @@
           android:layout_height="wrap_content"
           android:layout_width="fill_parent">
       </EditText>
+      <LinearLayout
+          android:id="@+id/editDynamicGroup"
+          android:layout_width="fill_parent"
+          android:orientation="vertical"
+          android:layout_height="fill_parent">
+      </LinearLayout>
+      <Button
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/edit_add_metadata"
+          android:onClick="showAddMetadataPopup"
+          />
     </LinearLayout>
 </ScrollView>

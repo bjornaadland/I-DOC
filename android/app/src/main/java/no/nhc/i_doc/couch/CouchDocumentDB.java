@@ -227,8 +227,10 @@ public class CouchDocumentDB extends DocumentDB
             return mProperties;
         }
 
-        public CouchMetadata() {
+        public CouchMetadata(java.lang.Class type) {
+            mType = type;
             mProperties = new HashMap<String, Object>();
+            mProperties.put(KeyType, type.getSimpleName().toLowerCase());
         }
 
         public CouchMetadata(Map<String, Object> props) {
@@ -265,13 +267,8 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public void set(Enum e, Object value) {
-            if (mType == null) {
-                mProperties.put(KeyType, e.getClass().getSimpleName().toLowerCase());
-                mType = e.getClass();
-            } else {
-                if (e.getClass() != mType) {
-                    throw new RuntimeException("type mismatch: had " + mType.getName() + ", tried to set " + e.getClass().getName() + " property");
-                }
+            if (e.getClass() != mType) {
+                throw new RuntimeException("type mismatch: had " + mType.getName() + ", tried to set " + e.getClass().getName() + " property");
             }
 
             MetaMapper mapper = sMetaMappers.get(e);
@@ -280,12 +277,8 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public Object get(Enum e) {
-            if (mType != null) {
-                if (e.getClass() != mType) {
-                    throw new RuntimeException("type mismatch");
-                }
-            } else {
-                throw new RuntimeException("object not initialized");
+            if (e.getClass() != mType) {
+                throw new RuntimeException("type mismatch");
             }
 
             MetaMapper mapper = sMetaMappers.get(e);
@@ -475,8 +468,8 @@ public class CouchDocumentDB extends DocumentDB
         cd.delete();
     }
 
-    public Metadata createMetadata()
+    public Metadata createMetadata(java.lang.Class type)
     {
-        return new CouchMetadata();
+        return new CouchMetadata(type);
     }
 }
