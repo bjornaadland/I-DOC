@@ -9,7 +9,6 @@ import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
 import android.widget.BaseAdapter;
 import android.widget.ListAdapter;
 import android.widget.ImageView;
@@ -23,8 +22,6 @@ import android.view.MenuInflater;
 
 import java.text.DateFormat;
 import java.util.Date;
-
-import com.nostra13.universalimageloader.core.ImageLoader;
 
 class EvidenceAdapter extends BaseAdapter {
     static final String TAG = "EvidenceAdapter";
@@ -82,25 +79,8 @@ class EvidenceAdapter extends BaseAdapter {
             }
 
             imageView.setImageDrawable(null);
-            java.util.List<String> files = document.getFiles();
-            if (files.size() > 0) {
-                String fileUri = files.get(0);
-                String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
-                String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-                if (type.startsWith("image/")) {
-                    ImageLoader.getInstance().displayImage(fileUri, imageView);
-                } else if (type.startsWith("video/")) {
-                    // Load the thumbnail
-                    ImageLoader.getInstance().displayImage(fileUri + ".jpg", imageView);
-                } else if (type.startsWith("audio/")) {
-                    // TODO: Display audio icon
-                } else {
-                    // TODO: Display generic icon
-                }
-            } else {
-                // TODO: Display generic icon
-            }
 
+            DocumentUtils.DisplayImage(document, imageView);
             {
                 Date date = new Date(document.getTimestamp() * 1000L);
                 DateFormat f = DateFormat.getDateTimeInstance();
@@ -190,7 +170,8 @@ public class EvidenceListFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
-        Intent intent = new Intent(getActivity(), EditEvidenceActivity.class);
+//        Intent intent = new Intent(getActivity(), EditEvidenceActivity.class);
+        Intent intent = new Intent(getActivity(), ShowEvidenceActivity.class);
         Document doc = (Document)getListAdapter().getItem(position);
         intent.setData(doc.getUri());
         startActivity(intent);

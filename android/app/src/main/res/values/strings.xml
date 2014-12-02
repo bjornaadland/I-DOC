@@ -3,6 +3,7 @@
 
     <string name="app_name">I-DOC</string>
     <string name="edit_evidence">Edit evidence</string>
+    <string name="show_evidence">Show evidence</string>
     <string name="edit_title">Edit title</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
@@ -13,5 +14,8 @@
     <string name="gather_evidence">Gather evidence</string>
     <string name="evidence">Evidence</string>
     <string name="evidence_delete">Delete</string>
+    <string name="pref_advanced">Advanced</string>
+    <string name="pref_advanced_summ">Display advanced options.</string>
+    <string name="settings">Settings.</string>
 
 </resources>

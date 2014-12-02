@@ -156,24 +156,28 @@ public class CaptureFragment extends Fragment {
         if (resultCode != Activity.RESULT_OK) {
             return;
         }
+        
+
+        // Filter requestCodes, common code below.
+        switch (requestCode) {
+        case REQUEST_IMAGE_CAPTURE:
+        case REQUEST_VIDEO_CAPTURE:
+            break;
+        default:
+            return;
+        }
+
+        DocumentDB db = DocumentDB.get(getActivity());
+        Document doc = db.createDocument();
+        DocumentUtils.SetDefaultTitle(doc);
+
         switch (requestCode) {
         case REQUEST_IMAGE_CAPTURE: {
-            DocumentDB db = DocumentDB.get(getActivity());
-            Document doc = db.createDocument();
             doc.addFile(mCurrentPhotoPath);
-            db.saveDocument(doc);
-/*
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            mImageView.setImageBitmap(imageBitmap);
-*/
             break;
         }
         case REQUEST_VIDEO_CAPTURE: {
-            DocumentDB db = DocumentDB.get(getActivity());
-            Document doc = db.createDocument();
             doc.addFile(mCurrentVideoPath);
-            db.saveDocument(doc);
 
             // Create and store a thumbnail
             try {
@@ -185,6 +189,7 @@ public class CaptureFragment extends Fragment {
             }
             break;
         }}
+        db.saveDocument(doc);
     }
 
 
