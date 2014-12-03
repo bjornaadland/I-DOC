@@ -8,6 +8,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 import android.widget.TextView;
@@ -16,6 +17,14 @@ public class EditEvidenceActivity extends Activity {
     static final String TAG = "EditEvidenceActivity";
 
     private Document mDocument;
+
+    private static class TextMap {
+        public Metadata mMetadata;
+        public Enum mProperty;
+        public EditText mEditText;
+    }
+
+    private java.util.List<TextMap> mTextMaps = new java.util.ArrayList<TextMap>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,30 +55,12 @@ public class EditEvidenceActivity extends Activity {
             EditText t = (EditText) findViewById(R.id.editTitle);
             mDocument.setTitle(t.getText().toString());
 
+            for (TextMap tm : mTextMaps) {
+                tm.mMetadata.set(tm.mProperty, tm.mEditText.getText().toString());
+            }
+
             DocumentDB.get(this).saveDocument(mDocument);
             Log.d(TAG, "... done saving");
-        }
-    }
-
-    private void saveTestData() {
-        Metadata person = DocumentDB.get(this).createMetadata(Metadata.Person.class);
-        person.set(Metadata.Person.FirstName, "hey");
-        person.set(Metadata.Person.LastName, "joe");
-
-        {
-            Metadata v = DocumentDB.get(this).createMetadata(Metadata.Victim.class);
-            v.set(Metadata.Victim.Person, person);
-            mDocument.addMetadata(v);
-        }
-        {
-            Metadata s = DocumentDB.get(this).createMetadata(Metadata.Suspect.class);
-            s.set(Metadata.Suspect.Person, person);
-            mDocument.addMetadata(s);
-        }
-        {
-            Metadata w = DocumentDB.get(this).createMetadata(Metadata.Witness.class);
-            w.set(Metadata.Witness.Person, person);
-            mDocument.addMetadata(w);
         }
     }
 
@@ -84,11 +75,50 @@ public class EditEvidenceActivity extends Activity {
         }
     }
 
+    /**
+     *  Create an EditText for the specified property in the metadata md
+     */
+    private View createMappedText(Metadata md, Enum property) {
+        TextMap tm = new TextMap();
+        EditText et = new EditText(this);
+        String prop = (String)md.get(property);
+
+        if (prop != null) {
+            et.setText(prop);
+        }
+
+        tm.mMetadata = md;
+        tm.mProperty = property;
+        tm.mEditText = et;
+        mTextMaps.add(tm);
+        return et;
+    }
+
+    /**
+     *  Create a dynamic view for a metadata object
+     */
     private View createDynamicView(Metadata md) {
+        LinearLayout root = new LinearLayout(this);
         java.lang.Class type = md.getType();
-        TextView tv = new TextView(this);
-        tv.setText(type.getSimpleName());
-        return tv;
+
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setLayoutParams(
+            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
+                                       ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        {
+            TextView tv = new TextView(this);
+            tv.setText(type.getSimpleName());
+            root.addView(tv);
+        }
+
+        if (type == Metadata.Victim.class) {
+            root.addView(createMappedText(md, Metadata.Victim.Test));
+        } else if (type == Metadata.Suspect.class) {
+            // etc
+        }
+
+        return root;
     }
 
     private java.lang.Class menuIdToMetaType(int id) {
@@ -111,6 +141,9 @@ public class EditEvidenceActivity extends Activity {
         }
     }
 
+    /**
+     *  Add a new metadata object and update the view
+     */
     private void addMetadata(java.lang.Class type) {
         Metadata md = DocumentDB.get(this).createMetadata(type);
         ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);

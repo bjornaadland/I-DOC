@@ -13,7 +13,8 @@ public interface Metadata {
      *  Listing of the properties of a Victim
      */
     public static enum Victim {
-        Person /* Person */
+        Person, /* Person */
+        Test
     }
 
     /**
