@@ -36,6 +36,11 @@
             android:parentActivityName="no.nhc.i_doc.SettingsActivity">
         </activity>
 
+        <activity
+            android:name="no.nhc.i_doc.ViewEvidenceActivity"
+            android:label="@string/view_evidence"
+            android:parentActivityName="no.nhc.i_doc.MainActivity">
+        </activity>
 
     </application>
 

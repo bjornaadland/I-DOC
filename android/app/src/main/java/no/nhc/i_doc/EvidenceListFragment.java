@@ -37,6 +37,8 @@ class EvidenceAdapter extends BaseAdapter {
         });
     }
 
+    public DocumentDB.List getEvidenceList() { return evidenceList; }
+
     @Override
     public int getCount() {
         return evidenceList.getCount();
@@ -170,9 +172,17 @@ public class EvidenceListFragment extends ListFragment {
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
-        Intent intent = new Intent(getActivity(), ShowEvidenceActivity.class);
-        Document doc = (Document)getListAdapter().getItem(position);
-        intent.setData(doc.getUri());
+//        Intent intent = new Intent(getActivity(), ShowEvidenceActivity.class);
+//        Document doc = (Document)getListAdapter().getItem(position);
+//        intent.setData(doc.getUri());
+
+//        Intent intent = new Intent(getActivity(), EditEvidenceActivity.class);
+//        Document doc = (Document)getListAdapter().getItem(position);
+//        intent.setData(doc.getUri());
+//        startActivity(intent);
+
+        Intent intent = new Intent(getActivity(), ViewEvidenceActivity.class);
+        intent.putExtra("position", position);
         startActivity(intent);
     }
 }

@@ -22,6 +22,7 @@ import com.couchbase.lite.View;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,8 +55,7 @@ public class CouchDocumentDB extends DocumentDB
     private Manager mManager;
     private Database mDatabase;
 
-    WeakHashMap<CouchDocumentList, Integer> mDocLists =
-        new WeakHashMap<CouchDocumentList, Integer>();
+    WeakReference<CouchDocumentList> mDocList = new WeakReference<CouchDocumentList>(null);
 
     /**
      *  Couchbase representation of a Document
@@ -416,11 +416,14 @@ public class CouchDocumentDB extends DocumentDB
 
     public DocumentDB.List getDocumentList()
     {
-        LiveQuery lq = getQuery().toLiveQuery();
-        lq.setDescending(true);
+        CouchDocumentList cdl = mDocList.get();
+        if (cdl == null) {
+            LiveQuery lq = getQuery().toLiveQuery();
+            lq.setDescending(true);
 
-        CouchDocumentList cdl = new CouchDocumentList(lq);
-        mDocLists.put(cdl, 0);
+            cdl = new CouchDocumentList(lq);
+            mDocList = new WeakReference<CouchDocumentList>(cdl);
+        }
         return cdl;
     }
 
@@ -438,9 +441,10 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
-    private void notifyListsChanged() {
-        // Notifiy all lists of change.
-        for (CouchDocumentList cdl : mDocLists.keySet()) {
+    private void notifyListChanged() {
+        // Notifiy change.
+        CouchDocumentList cdl = mDocList.get();
+        if (cdl != null) {
             cdl.notifyChange();
         }
     }
@@ -450,9 +454,9 @@ public class CouchDocumentDB extends DocumentDB
         CouchDocument cd = (CouchDocument)doc;
         if (cd.getId() != null) {
             cd.save();
-            // As this is an already existing document, notify existing document lists
-            // of a change to their data set.
-            notifyListsChanged();
+            // As this is an already existing document, notify existing document list
+            // of a change to the data set.
+            notifyListChanged();
         } else {
             // A new document is automatically picked up by LiveQuery listener
             cd.save();

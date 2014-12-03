@@ -4,6 +4,7 @@
     <string name="app_name">I-DOC</string>
     <string name="edit_evidence">Edit evidence</string>
     <string name="show_evidence">Show evidence</string>
+    <string name="view_evidence">View evidence</string>
     <string name="edit_title">Edit title</string>
     <string name="edit_add_metadata">Add field</string>
     <string name="hello_world">Hello world!</string>
