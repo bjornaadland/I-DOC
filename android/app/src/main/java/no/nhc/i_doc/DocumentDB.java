@@ -67,4 +67,9 @@ public abstract class DocumentDB
      * Create an empty metadata object to be attached to a document
      */
     abstract Metadata createMetadata(java.lang.Class type);
+
+    /**
+     * Sync all data upstream
+     */
+    abstract void sync();
 }

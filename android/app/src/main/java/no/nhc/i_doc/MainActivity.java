@@ -90,6 +90,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             startActivity(new Intent(this, SettingsActivity.class));
+        } else if (id == R.id.action_sync) {
+            DocumentDB.get(this).sync();
         }
 
         return super.onOptionsItemSelected(item);

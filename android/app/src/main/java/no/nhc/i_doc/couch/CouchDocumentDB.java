@@ -7,6 +7,9 @@ import android.os.Message;
 import android.util.Log;
 
 import com.couchbase.lite.android.AndroidContext;
+import com.couchbase.lite.auth.Authenticator;
+import com.couchbase.lite.auth.AuthenticatorFactory;
+import com.couchbase.lite.replicator.Replication;
 import com.couchbase.lite.CouchbaseLiteException;
 import com.couchbase.lite.Emitter;
 import com.couchbase.lite.Database;
@@ -23,6 +26,7 @@ import com.couchbase.lite.View;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +53,7 @@ public class CouchDocumentDB extends DocumentDB
     public static final String TypeDoc = "doc";
 
     public static Database sSingletonDatabase;
+    public static Replication sPushReplication;
 
     public static Map<Object, MetaMapper> sMetaMappers;
 
@@ -475,5 +480,30 @@ public class CouchDocumentDB extends DocumentDB
     public Metadata createMetadata(java.lang.Class type)
     {
         return new CouchMetadata(type);
+    }
+
+    public void sync()
+    {
+        if (sPushReplication != null) return;
+
+        URL url;
+        try {
+            url = new URL("http://ec2-54-78-134-214.eu-west-1.compute.amazonaws.com:4984");
+        } catch (java.net.MalformedURLException e) {
+            Log.e(TAG, "can't create URL");
+            return;
+        }
+
+        sPushReplication = sSingletonDatabase.createPushReplication(url);
+        sPushReplication.setAuthenticator(
+            AuthenticatorFactory.createBasicAuthenticator("hei", "du"));
+
+        sPushReplication.addChangeListener(new Replication.ChangeListener() {
+            public void changed(Replication.ChangeEvent event) {
+                Log.d(TAG, "sync changed.....");
+            }
+        });
+
+        sPushReplication.start();
     }
 }
