@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">I-DOC</string>
     <string name="edit_evidence">Edit evidence</string>
-    <string name="show_evidence">Show evidence</string>
     <string name="view_evidence">View evidence</string>
     <string name="edit_title">Edit title</string>
     <string name="edit_add_metadata">Add field</string>
@@ -29,5 +27,4 @@
     <string name="pref_advanced">Advanced</string>
     <string name="pref_advanced_summ">Display advanced options.</string>
     <string name="settings">Settings.</string>
-
 </resources>

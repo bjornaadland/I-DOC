@@ -25,12 +25,6 @@
         </activity>
 
         <activity
-            android:name="no.nhc.i_doc.ShowEvidenceActivity"
-            android:label="@string/show_evidence"
-            android:parentActivityName="no.nhc.i_doc.MainActivity">
-        </activity>
-
-        <activity
             android:name="no.nhc.i_doc.SettingsActivity"
             android:label="@string/settings"
             android:parentActivityName="no.nhc.i_doc.SettingsActivity">

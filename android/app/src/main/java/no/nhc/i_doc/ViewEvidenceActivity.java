@@ -13,10 +13,13 @@ import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.TextView;
 
 public class ViewEvidenceActivity extends FragmentActivity {
@@ -38,27 +41,41 @@ public class ViewEvidenceActivity extends FragmentActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_show_evidence, menu);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case android.R.id.home:
-                // This is called when the Home (Up) button is pressed in the action bar.
-                // Create a simple intent that starts the hierarchical parent activity and
-                // use NavUtils in the Support Package to ensure proper handling of Up.
-                Intent upIntent = new Intent(this, MainActivity.class);
-                if (NavUtils.shouldUpRecreateTask(this, upIntent)) {
-                    // This activity is not part of the application's task, so create a new task
-                    // with a synthesized back stack.
-                    TaskStackBuilder.from(this)
-                            // If there are ancestor activities, they should be added here.
-                            .addNextIntent(upIntent)
-                            .startActivities();
-                    finish();
-                } else {
-                    // This activity is part of the application's task, so simply
-                    // navigate up to the hierarchical parent activity.
-                    NavUtils.navigateUpTo(this, upIntent);
-                }
-                return true;
+        case R.id.show_evidence_delete: {
+            Intent intent = new Intent(this, EditEvidenceActivity.class);
+            Document doc = mViewEvidencePagerAdapter.getDocument(mViewPager.getCurrentItem());
+            intent.setData(doc.getUri());
+            startActivity(intent);
+            break;
+        }            
+        case android.R.id.home:
+            // This is called when the Home (Up) button is pressed in the action bar.
+            // Create a simple intent that starts the hierarchical parent activity and
+            // use NavUtils in the Support Package to ensure proper handling of Up.
+            Intent upIntent = new Intent(this, MainActivity.class);
+            if (NavUtils.shouldUpRecreateTask(this, upIntent)) {
+                // This activity is not part of the application's task, so create a new task
+                // with a synthesized back stack.
+                TaskStackBuilder.from(this)
+                    // If there are ancestor activities, they should be added here.
+                    .addNextIntent(upIntent)
+                    .startActivities();
+                finish();
+            } else {
+                // This activity is part of the application's task, so simply
+                // navigate up to the hierarchical parent activity.
+                NavUtils.navigateUpTo(this, upIntent);
+            }
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -78,6 +95,10 @@ public class ViewEvidenceActivity extends FragmentActivity {
                     notifyDataSetChanged();
                 }
             });
+        }
+
+        public Document getDocument(int i) {
+            return evidenceList.getDocument(i);
         }
 
         @Override
@@ -100,6 +121,16 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
         public static final String ARG_DOCUMENT_URI = "docUri";
 
+        private ViewGroup addGroup(String header, ViewGroup container) {
+            ViewGroup layoutView = new LinearLayout(getActivity());
+            TextView headerView = new TextView(getActivity());
+            headerView.setText(header);
+            layoutView.addView(headerView);
+            container.addView(layoutView);
+            return layoutView;
+        }
+
+
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
@@ -111,7 +142,18 @@ public class ViewEvidenceActivity extends FragmentActivity {
             imageView.setImageDrawable(null);
             DocumentUtils.DisplayImage(doc, imageView);
 
-            ((TextView) rootView.findViewById(R.id.text_evidence_title)).setText(doc.getTitle());
+            ((TextView)rootView.findViewById(R.id.text_evidence_title)).setText(doc.getTitle());
+
+            ViewGroup metaContainer = (ViewGroup) rootView.findViewById(R.id.metadataContainer);
+            ViewGroup group;
+            group = addGroup("Victims", metaContainer);
+            group = addGroup("Suspects", metaContainer);
+            group = addGroup("Witnesses", metaContainer);
+            group = addGroup("Context", metaContainer);
+            group = addGroup("Incident", metaContainer);
+            group = addGroup("Protected object", metaContainer);
+            group = addGroup("Organizational unit", metaContainer);
+
             return rootView;
         }
     }
