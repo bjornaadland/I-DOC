@@ -33,5 +33,5 @@
     <string name="context">Context</string>
     <string name="incident">Incident</string>
     <string name="protected_object">Protected object</string>
-    <string name="organizational_unit">Organizational unit"</string>
+    <string name="organizational_unit">Organizational unit</string>
 </resources>
