@@ -50,7 +50,7 @@ public class ViewEvidenceActivity extends FragmentActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-        case R.id.show_evidence_delete: {
+        case R.id.evidence_edit: {
             Intent intent = new Intent(this, EditEvidenceActivity.class);
             Document doc = mViewEvidencePagerAdapter.getDocument(mViewPager.getCurrentItem());
             intent.setData(doc.getUri());

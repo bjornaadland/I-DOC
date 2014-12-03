@@ -4,7 +4,7 @@
     tools:context=".ShowEvidenceActivity">
   <item
       android:showAsAction="always"
-      android:id="@+id/show_evidence_delete"
+      android:id="@+id/evidence_edit"
       android:icon="@android:drawable/ic_menu_edit"
       />
 </menu>
