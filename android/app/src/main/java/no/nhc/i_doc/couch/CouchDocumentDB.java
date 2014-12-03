@@ -488,7 +488,7 @@ public class CouchDocumentDB extends DocumentDB
 
         URL url;
         try {
-            url = new URL("http://ec2-54-78-134-214.eu-west-1.compute.amazonaws.com:4984");
+            url = new URL("http://ec2-54-78-134-214.eu-west-1.compute.amazonaws.com:4984/idoc");
         } catch (java.net.MalformedURLException e) {
             Log.e(TAG, "can't create URL");
             return;
@@ -496,11 +496,11 @@ public class CouchDocumentDB extends DocumentDB
 
         sPushReplication = sSingletonDatabase.createPushReplication(url);
         sPushReplication.setAuthenticator(
-            AuthenticatorFactory.createBasicAuthenticator("hei", "du"));
-
+            AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
         sPushReplication.addChangeListener(new Replication.ChangeListener() {
             public void changed(Replication.ChangeEvent event) {
-                Log.d(TAG, "sync changed.....");
+                Log.d(TAG, "sync changed..... removing");
+                sPushReplication = null;
             }
         });
 
