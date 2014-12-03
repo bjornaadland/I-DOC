@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".ShowEvidenceActivity">
   <item
-      app:showAsAction="always"
+      android:showAsAction="always"
       android:id="@+id/show_evidence_delete"
-      android:icon="@android:drawable/ic_delete"
+      android:icon="@android:drawable/ic_menu_edit"
       />
 </menu>
