@@ -15,11 +15,14 @@
     <string name="button_take_picture">Take picture</string>
     <string name="meta_add">Add metadata</string>
     <string name="meta_victim">Victim</string>
-    <string name="meta_suspect">Suspect</string>
     <string name="meta_witness">Witness</string>
+    <string name="meta_witness_rank">Rank</string>
+    <string name="meta_suspect">Suspect</string>
     <string name="meta_protectedobject">Protected object</string>
     <string name="meta_context">Context</string>
     <string name="meta_orgunit">Organizational unit</string>
+    <string name="meta_prop_notes">Notes</string>
+    <string name="meta_prop_name">Notes</string>
     <string name="gather_evidence">Gather evidence</string>
     <string name="evidence">Evidence</string>
     <string name="evidence_delete">Delete</string>

@@ -78,10 +78,12 @@ public class EditEvidenceActivity extends Activity {
     /**
      *  Create an EditText for the specified property in the metadata md
      */
-    private View createMappedText(Metadata md, Enum property) {
+    private View createMappedText(Metadata md, Enum property, int hintResource) {
         TextMap tm = new TextMap();
         EditText et = new EditText(this);
         String prop = (String)md.get(property);
+
+        et.setHint(hintResource);
 
         if (prop != null) {
             et.setText(prop);
@@ -113,9 +115,21 @@ public class EditEvidenceActivity extends Activity {
         }
 
         if (type == Metadata.Victim.class) {
-            root.addView(createMappedText(md, Metadata.Victim.Test));
+            root.addView(createMappedText(md, Metadata.Victim.Notes, R.string.meta_prop_notes));
+        } else if (type == Metadata.Witness.class) {
+            root.addView(createMappedText(md, Metadata.Witness.Rank, R.string.meta_witness_rank));
+            root.addView(createMappedText(md, Metadata.Witness.Notes, R.string.meta_prop_notes));
         } else if (type == Metadata.Suspect.class) {
-            // etc
+            root.addView(createMappedText(md, Metadata.Suspect.Notes, R.string.meta_prop_notes));
+        } else if (type == Metadata.ProtectedObject.class) {
+            root.addView(createMappedText(md, Metadata.ProtectedObject.Name, R.string.meta_prop_name));
+            root.addView(createMappedText(md, Metadata.ProtectedObject.Notes, R.string.meta_prop_notes));
+        } else if (type == Metadata.Context.class) {
+            root.addView(createMappedText(md, Metadata.Context.Name, R.string.meta_prop_name));
+            root.addView(createMappedText(md, Metadata.Context.Notes, R.string.meta_prop_notes));
+        } else if (type == Metadata.OrgUnit.class) {
+            root.addView(createMappedText(md, Metadata.OrgUnit.Name, R.string.meta_prop_name));
+            root.addView(createMappedText(md, Metadata.OrgUnit.Notes, R.string.meta_prop_notes));
         }
 
         return root;
@@ -126,10 +140,10 @@ public class EditEvidenceActivity extends Activity {
         switch (id) {
         case R.id.edit_add_meta_victim:
             return Metadata.Victim.class;
-        case R.id.edit_add_meta_suspect:
-            return Metadata.Suspect.class;
         case R.id.edit_add_meta_witness:
             return Metadata.Witness.class;
+        case R.id.edit_add_meta_suspect:
+            return Metadata.Suspect.class;
         case R.id.edit_add_meta_protectedobject:
             return Metadata.ProtectedObject.class;
         case R.id.edit_add_meta_context:
