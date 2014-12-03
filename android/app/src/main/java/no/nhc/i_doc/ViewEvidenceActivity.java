@@ -121,7 +121,7 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
         public static final String ARG_DOCUMENT_URI = "docUri";
 
-        private ViewGroup addGroup(String header, ViewGroup container) {
+        private ViewGroup addGroup(CharSequence header, ViewGroup container) {
             ViewGroup layoutView = new LinearLayout(getActivity());
             TextView headerView = new TextView(getActivity());
             headerView.setText(header);
@@ -146,14 +146,13 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
             ViewGroup metaContainer = (ViewGroup) rootView.findViewById(R.id.metadataContainer);
             ViewGroup group;
-            group = addGroup("Victims", metaContainer);
-            group = addGroup("Suspects", metaContainer);
-            group = addGroup("Witnesses", metaContainer);
-            group = addGroup("Context", metaContainer);
-            group = addGroup("Incident", metaContainer);
-            group = addGroup("Protected object", metaContainer);
-            group = addGroup("Organizational unit", metaContainer);
-
+            group = addGroup(getText(R.string.victims), metaContainer);
+            group = addGroup(getText(R.string.suspects), metaContainer);
+            group = addGroup(getText(R.string.witnesses), metaContainer);
+            group = addGroup(getText(R.string.context), metaContainer);
+            group = addGroup(getText(R.string.incident), metaContainer);
+            group = addGroup(getText(R.string.protected_object), metaContainer);
+            group = addGroup(getText(R.string.organizational_unit), metaContainer);
             return rootView;
         }
     }
