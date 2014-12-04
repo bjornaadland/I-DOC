@@ -228,6 +228,18 @@ public class CouchDocumentDB extends DocumentDB
 
         public java.lang.Class getType() { return mType; }
 
+        public Metadata.PropertyType getPropertyType(Enum e) {
+            MetaMapper mapper = sMetaMappers.get(e);
+            if (mapper == null) {
+                return new Metadata.PropertyType() {
+                    public java.lang.Class getType() { return String.class; }
+                    public boolean isList() { return false; }
+                };
+            } else {
+                return mapper.getPropertyType();
+            }
+        }
+
         public Map<String, Object> getProperties() {
             return mProperties;
         }
@@ -292,18 +304,95 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    /**
+     *  Map to and from Metadata property types and database native types
+     */
     private interface MetaMapper {
+        Metadata.PropertyType getPropertyType();
         Object mapToDb(Object o);
         Object mapToUser(Object o);
     }
 
-    private class PersonMapper implements MetaMapper {
+    /**
+     *  Map between Person object and database native representation
+     */
+    private static class PersonMapper implements MetaMapper {
+        public Metadata.PropertyType getPropertyType() {
+            return new Metadata.PropertyType() {
+                public java.lang.Class getType() { return Metadata.Person.class; }
+                public boolean isList() { return false; }
+            };
+        }
+
         public Object mapToDb(Object o) {
             return ((CouchMetadata)o).getProperties();
         }
 
         public Object mapToUser(Object o) {
             return new CouchMetadata((Map<String, Object>)o);
+        }
+    }
+
+    /**
+     *  Map between Value objects and database native representation
+     */
+    private static class ValueMapper implements MetaMapper {
+        private java.lang.Class mClass;
+
+        public static Value createValue(java.lang.Class valueClass, Object key) {
+            Value v = null;
+            try {
+                v = (Value)valueClass.newInstance();
+                v.setKey(key);
+            } catch (Exception e) {}
+
+            return v;
+        }
+
+        public ValueMapper(java.lang.Class valueClass) {
+            mClass = valueClass;
+        }
+
+        public Metadata.PropertyType getPropertyType() {
+            return new Metadata.PropertyType() {
+                public java.lang.Class getType() { return mClass; }
+                public boolean isList() { return false; }
+            };
+        }
+
+        public Object mapToDb(Object o) {
+            Value v = (Value)o;
+            return v.getKey();
+        }
+
+        public Object mapToUser(Object o) {
+            return createValue(mClass, o);
+        }
+    }
+
+    /**
+     *  Map between List<Value> and database native representation
+     */
+    private static class ValueListMapper implements MetaMapper {
+        private java.lang.Class mClass;
+
+        public ValueListMapper(java.lang.Class valueClass) {
+            mClass = valueClass;
+        }
+
+        public Metadata.PropertyType getPropertyType() {
+            return new Metadata.PropertyType() {
+                public java.lang.Class getType() { return mClass; }
+                public boolean isList() { return true; }
+            };
+        }
+
+        public Object mapToDb(Object o) {
+            return new ArrayList<Value>();
+        }
+
+        public Object mapToUser(Object o) {
+            return null;
         }
     }
 
@@ -376,8 +465,20 @@ public class CouchDocumentDB extends DocumentDB
         }
     }
 
+    private void mapValue(Object property, java.lang.Class valueClass) {
+        sMetaMappers.put(property, new ValueMapper(valueClass));
+    }
+
+    private void mapValueList(Object property, java.lang.Class valueClass) {
+        sMetaMappers.put(property, new ValueListMapper(valueClass));
+    }
+
+    private void mapPerson(Object property) {
+        sMetaMappers.put(property, new PersonMapper());
+    }
+
     /**
-     *
+     *  Construct the couchbase lite based document database
      */
     public CouchDocumentDB(android.content.Context context) throws RuntimeException {
         try {
@@ -386,9 +487,47 @@ public class CouchDocumentDB extends DocumentDB
             sSingletonDatabase = mDatabase;
 
             sMetaMappers = new HashMap<Object, MetaMapper>();
-            sMetaMappers.put(Metadata.Victim.Person, new PersonMapper());
-            sMetaMappers.put(Metadata.Suspect.Person, new PersonMapper());
-            sMetaMappers.put(Metadata.Witness.Person, new PersonMapper());
+
+            /* Person special properties */
+            mapValue(Metadata.Person.AgeCategory, Value.AgeCategory.class);
+            mapValue(Metadata.Person.OriginalCollection, Value.OriginalCollection.class);
+
+            /* Victim special properties */
+            mapPerson(Metadata.Victim.Person);
+            mapValueList(Metadata.Victim.InterestsViolated, Value.Violation.class);
+            mapValueList(Metadata.Victim.ViolationType, Value.ViolationType.class);
+            mapValue(Metadata.Victim.ParticularVulnerability, Value.Vulnerability.class);
+            mapValue(Metadata.Victim.OriginalCollection, Value.OriginalCollection.class);
+            mapValue(Metadata.Victim.ICHLStatus, Value.ICHLStatus.class);
+            mapValue(Metadata.Victim.RoleAndBelonging, Value.RoleAndBelonging.class);
+
+            /* Witness special properties */
+            mapPerson(Metadata.Witness.Person);
+            mapValueList(Metadata.Witness.Type, Value.WitnessType.class);
+            mapValue(Metadata.Witness.RoleAndBelonging, Value.RoleAndBelonging.class);
+            mapValueList(Metadata.Witness.Reliability, Value.Reliability.class);
+            mapValue(Metadata.Witness.OriginalCollection, Value.OriginalCollection.class);
+
+            /* Suspect special properties */
+            mapPerson(Metadata.Suspect.Person);
+            mapValueList(Metadata.Suspect.LegalStatus, Value.LegalStatus.class);
+            mapValue(Metadata.Suspect.OriginalCollection, Value.OriginalCollection.class);
+
+            /* ProtectedObject special properties */
+            mapValue(Metadata.ProtectedObject.NotorietyLevel, Value.NotorietyLevel.class);
+            mapValueList(Metadata.ProtectedObject.Typology, Value.Typology.class);
+            mapValue(Metadata.ProtectedObject.OriginalCollection, Value.OriginalCollection.class);
+
+            /* Context special properties */
+            mapValue(Metadata.Context.ImportanceLevel, Value.ImportanceLevel.class);
+            mapValue(Metadata.Context.Typology, Value.Typology.class);
+            mapValue(Metadata.Context.Forms, Value.ContextForm.class);
+
+            /* OrgUnit speicl properties */
+            mapValue(Metadata.OrgUnit.InstitutionalBelonging, Value.InstitutionalBelonging.class);
+            mapValueList(Metadata.OrgUnit.Typology, Value.Typology.class);
+            mapValueList(Metadata.OrgUnit.RoleAndBelonging, Value.RoleAndBelonging.class);
+            mapValue(Metadata.OrgUnit.Importance, Value.ImportanceLevel.class); // same as above?
         } catch (IOException e) {
             throw new RuntimeException("could not create database manager, IOException");
         } catch (CouchbaseLiteException e) {
@@ -505,5 +644,18 @@ public class CouchDocumentDB extends DocumentDB
         });
 
         sPushReplication.start();
+    }
+
+    public java.util.List<Value> getValueSet(java.lang.Class valueClass)
+    {
+        ArrayList<Value> l = new ArrayList<Value>();
+        String test = "ABC";
+
+        for (int i = 0; i < 3; ++i) {
+            l.add(ValueMapper.createValue(valueClass,
+                                          test.substring(i, i + 1)));
+        }
+
+        return l;
     }
 }

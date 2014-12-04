@@ -1,6 +1,11 @@
 package no.nhc.i_doc;
 
 public interface Metadata {
+    public interface PropertyType {
+        java.lang.Class getType();
+        boolean isList();
+    }
+
     /**
      *  Listing of the properties of a Person
      */
@@ -10,10 +15,10 @@ public interface Metadata {
         OtherIdentity, /* String */
         Gender,        /* String */
         DateOfBirth,   /* ??? */
-        AgeCategory,   /* MetaEnum */
+        AgeCategory,   /* Value.AgeCategory */
         Address,       /* String */
         Notes,         /* String */
-        OriginalCollection, /* MetaEnum */
+        OriginalCollection, /* Value.OriginalCollection */
     }
 
     /**
@@ -21,13 +26,13 @@ public interface Metadata {
      */
     public static enum Victim {
         Person,              /* Person */
-        InterestsViolated,   /* List<MetaEnum> */
-        ViolationType,       /* List<MetaEnum> */
+        InterestsViolated,   /* List<Value.Interest> */
+        ViolationType,       /* List<Value.Violation> */
         GeoRelevanceAndTime, /* ??? Geography and time period, multiple */
-        ParticularVulnerability, /* List<MetaEnum> */
-        OriginalCollection,  /* MetaEnum */
-        ICHLStatus,          /* MetaEnum */
-        RoleAndBelonging,    /* MetaEnum */
+        ParticularVulnerability, /* List<Value.Vulnerability> */
+        OriginalCollection,  /* Value.OriginalCollection */
+        ICHLStatus,          /* Value.ICHLStatus */
+        RoleAndBelonging,    /* Value.RoleAndBelonging */
         Notes,               /* String */
     }
 
@@ -36,12 +41,12 @@ public interface Metadata {
      */
     public static enum Witness {
         Person,              /* Person */
-        Type,                /* List<MetaEnum> */
+        Type,                /* List<Value.WitnessType> */
         Rank,                /* String */
-        RoleAndBelonging,    /* MetaEnum */
-        Reliability,         /* List<MetaEnum> */
+        RoleAndBelonging,    /* Value.RoleAndBelonging */
+        Reliability,         /* List<Value.Reliability> */
         GeoRelevanceAndTime, /* ??? */
-        OriginalCollection,  /* MetaEnum */
+        OriginalCollection,  /* Value.OriginalCollection */
         Notes,               /* String */
     }
 
@@ -50,9 +55,9 @@ public interface Metadata {
      */
     public static enum Suspect {
         Person,              /* Person */
-        LegalStatus,         /* List<MetaEnum> */
+        LegalStatus,         /* List<Value.LegalStatus> */
         GeoRelevanceAndTime, /* ??? */
-        OriginalCollection,  /* MetaEnum */
+        OriginalCollection,  /* Value.OriginalCollection */
         Notes,               /* String */
     }
 
@@ -62,10 +67,10 @@ public interface Metadata {
     public static enum ProtectedObject {
         Name,                 /* String */
         GeoRelevanceAndTime,  /* ??? */
-        NotorietyLevel,       /* MetaEnum */
-        Typology,             /* List<MetaEnum> */
+        NotorietyLevel,       /* Value.NotorietyLevel */
+        Typology,             /* List<Value.Typology> */
         Notes,                /* String */
-        OriginalCollection,   /* MetaEnum */
+        OriginalCollection,   /* Value.OriginalCollection */
     }
 
     /**
@@ -74,9 +79,9 @@ public interface Metadata {
     public static enum Context {
         Name,                 /* String */
         GeoRelevanceAndTime,  /* ???? */
-        ImportanceLevel,      /* MetaEnum */
-        Typology,             /* List<MetaEnum> */
-        Forms,                /* List<MetaEnum> */
+        ImportanceLevel,      /* Value.ImportanceLevel */
+        Typology,             /* List<Value.Typology> */
+        Forms,                /* List<Value.ContextForm> */
         Notes,                /* String */
     }
 
@@ -85,11 +90,11 @@ public interface Metadata {
      */
     public static enum OrgUnit {
         Name,                  /* String */
-        InstitutionalBelonging, /* List<MetaEnum> */
-        Typology,               /* List<MetaEnum> */
-        RoleAndBelonging,       /* MetaEnum */
+        InstitutionalBelonging, /* List<Value.InstitutionalBelonging> */
+        Typology,               /* List<Value.Typology> */
+        RoleAndBelonging,       /* Value.RoleAndBelonging */
         GeoRelevanceAndTime,    /* ??? */
-        Importance,             /* MetaEnum */
+        Importance,             /* Value.Importance */
         Notes,                  /* String */
     }
 
@@ -98,6 +103,11 @@ public interface Metadata {
      *  The type will match one of the enum types.
      */
     java.lang.Class getType();
+
+    /**
+     *  Get the data type of the specified property
+     */
+    PropertyType getPropertyType(Enum e);
 
     /**
      *  Set a metadata property.

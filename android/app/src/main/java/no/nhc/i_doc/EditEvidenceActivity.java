@@ -7,10 +7,12 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class EditEvidenceActivity extends Activity {
@@ -96,6 +98,45 @@ public class EditEvidenceActivity extends Activity {
         return et;
     }
 
+    private View createMappedSpinner(Metadata md,
+                                     Enum property,
+                                     Metadata.PropertyType type,
+                                     int hintResource) {
+        Spinner spinner = new Spinner(this);
+        ArrayAdapter<CharSequence> adapter = new
+            ArrayAdapter(this, android.R.layout.simple_spinner_item,
+                         DocumentDB.get(this).getValueSet(type.getType()));
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+        spinner.setSelection(0);
+        return spinner;
+    }
+
+    private View createUnsupported(String rep) {
+        TextView tv = new TextView(this);
+        tv.setText(rep);
+        return tv;
+    }
+
+    private View createControl(Metadata md, Enum property, int hintResource) {
+        Metadata.PropertyType pt = md.getPropertyType(property);
+        java.lang.Class type = pt.getType();
+
+        if (java.lang.CharSequence.class.isAssignableFrom(type)) {
+            return createMappedText(md, property, hintResource);
+        } else if (type.getEnclosingClass() == Value.class) {
+            if (pt.isList()) {
+                /* multiple choice */
+                return createUnsupported("list of " + type.getSimpleName());
+            } else {
+                /* single choice */
+                return createMappedSpinner(md, property, pt, hintResource);
+            }
+        } else {
+            return createUnsupported("no UI for " + type.getSimpleName());
+        }
+    }
+
     /**
      *  Create a dynamic view for a metadata object
      */
@@ -115,21 +156,28 @@ public class EditEvidenceActivity extends Activity {
         }
 
         if (type == Metadata.Victim.class) {
-            root.addView(createMappedText(md, Metadata.Victim.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.InterestsViolated, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.ViolationType, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.ParticularVulnerability, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.OriginalCollection, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.ICHLStatus, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.RoleAndBelonging, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Victim.Notes, R.string.meta_prop_notes));
+
         } else if (type == Metadata.Witness.class) {
-            root.addView(createMappedText(md, Metadata.Witness.Rank, R.string.meta_witness_rank));
-            root.addView(createMappedText(md, Metadata.Witness.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Witness.Rank, R.string.meta_witness_rank));
+            root.addView(createControl(md, Metadata.Witness.Notes, R.string.meta_prop_notes));
         } else if (type == Metadata.Suspect.class) {
-            root.addView(createMappedText(md, Metadata.Suspect.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Suspect.Notes, R.string.meta_prop_notes));
         } else if (type == Metadata.ProtectedObject.class) {
-            root.addView(createMappedText(md, Metadata.ProtectedObject.Name, R.string.meta_prop_name));
-            root.addView(createMappedText(md, Metadata.ProtectedObject.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.ProtectedObject.Name, R.string.meta_prop_name));
+            root.addView(createControl(md, Metadata.ProtectedObject.Notes, R.string.meta_prop_notes));
         } else if (type == Metadata.Context.class) {
-            root.addView(createMappedText(md, Metadata.Context.Name, R.string.meta_prop_name));
-            root.addView(createMappedText(md, Metadata.Context.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.Context.Name, R.string.meta_prop_name));
+            root.addView(createControl(md, Metadata.Context.Notes, R.string.meta_prop_notes));
         } else if (type == Metadata.OrgUnit.class) {
-            root.addView(createMappedText(md, Metadata.OrgUnit.Name, R.string.meta_prop_name));
-            root.addView(createMappedText(md, Metadata.OrgUnit.Notes, R.string.meta_prop_notes));
+            root.addView(createControl(md, Metadata.OrgUnit.Name, R.string.meta_prop_name));
+            root.addView(createControl(md, Metadata.OrgUnit.Notes, R.string.meta_prop_notes));
         }
 
         return root;

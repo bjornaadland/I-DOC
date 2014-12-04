@@ -72,4 +72,10 @@ public abstract class DocumentDB
      * Sync all data upstream
      */
     abstract void sync();
+
+    /**
+     * Get the Value set (enum-like) that can be used
+     * as constants for Value based Metadata properties
+     */
+    abstract java.util.List<Value> getValueSet(java.lang.Class valueClass);
 }
