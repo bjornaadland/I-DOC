@@ -120,6 +120,9 @@ public class ViewEvidenceActivity extends FragmentActivity {
     public static class ViewEvidenceFragment extends Fragment {
 
         public static final String ARG_DOCUMENT_URI = "docUri";
+        Document mDocument;
+        Document.Listener mDocumentListener;
+
 
         private ViewGroup addGroup(CharSequence header, ViewGroup container) {
             ViewGroup layoutView = new LinearLayout(getActivity());
@@ -130,17 +133,10 @@ public class ViewEvidenceActivity extends FragmentActivity {
             return layoutView;
         }
 
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_view_evidence, container, false);
-            Bundle args = getArguments();
-            Document doc = DocumentDB.get(getActivity()).getDocument(Uri.parse(args.getString(ARG_DOCUMENT_URI)));
-
+        private void populateView(View rootView) {
             ImageView imageView = (ImageView) rootView.findViewById(R.id.evidenceImage);
             imageView.setImageDrawable(null);
-            DocumentUtils.DisplayImage(doc, imageView);
+            DocumentUtils.DisplayImage(mDocument, imageView);
 
             imageView.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
@@ -174,9 +170,10 @@ public class ViewEvidenceActivity extends FragmentActivity {
                 }
             });
 
-            ((TextView)rootView.findViewById(R.id.text_evidence_title)).setText(doc.getTitle());
+            ((TextView)rootView.findViewById(R.id.text_evidence_title)).setText(mDocument.getTitle());
 
             ViewGroup metaContainer = (ViewGroup) rootView.findViewById(R.id.metadataContainer);
+            metaContainer.removeAllViews();
             ViewGroup group;
             group = addGroup(getText(R.string.victims), metaContainer);
             group = addGroup(getText(R.string.suspects), metaContainer);
@@ -185,6 +182,31 @@ public class ViewEvidenceActivity extends FragmentActivity {
             group = addGroup(getText(R.string.incident), metaContainer);
             group = addGroup(getText(R.string.protected_object), metaContainer);
             group = addGroup(getText(R.string.organizational_unit), metaContainer);
+            
+        }
+
+        @Override
+        public void onDestroyView() {
+            mDocument.removeChangeListener(mDocumentListener);
+            mDocument = null;
+            mDocumentListener = null;
+            super.onDestroyView();
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            final View rootView = inflater.inflate(R.layout.fragment_view_evidence, container, false);
+            mDocument = DocumentDB.get(getActivity()).getDocument(Uri.parse(getArguments().getString(ARG_DOCUMENT_URI)));
+            populateView(rootView);
+            mDocumentListener = new Document.Listener() {
+                    public void changed() {
+                        Log.d("CouchDocumentDB", "changed");
+                        populateView(rootView);
+                    }
+                };
+            mDocument.addChangeListener(mDocumentListener);
+            
             return rootView;
         }
     }

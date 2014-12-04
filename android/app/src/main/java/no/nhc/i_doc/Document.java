@@ -17,6 +17,23 @@ public abstract interface Document
     abstract Uri getUri();
 
     /**
+     *  Listener class for changes.
+     */
+    public static interface Listener {
+        void changed();
+    }
+
+    /**
+     * Add listener for changes.
+     */
+    abstract void addChangeListener(Listener newListener);
+
+    /**
+     * Remove listener for changes.
+     */
+    abstract void removeChangeListener(Listener newListener);
+
+    /**
      *  Retrieve Document title
      */
     abstract String getTitle();

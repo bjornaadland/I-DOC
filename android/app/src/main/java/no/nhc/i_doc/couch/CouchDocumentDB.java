@@ -218,6 +218,42 @@ public class CouchDocumentDB extends DocumentDB
         {
             return mId;
         }
+
+        private java.util.List<Listener> mListeners = new ArrayList<Listener>();
+        
+        public void addChangeListener(Listener newListener) {
+            com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument((String)mId);
+            if (doc == null) {
+                return;
+            }
+            mListeners.add(newListener);
+            if (mListeners.size() == 1) {
+                doc.addChangeListener(new com.couchbase.lite.Document.ChangeListener() {
+                        @Override 
+                        public void changed(com.couchbase.lite.Document.ChangeEvent event) { 
+                            com.couchbase.lite.DocumentChange docChange = event.getChange();
+                            String msg = "New revision added: %s. Conflict: %s"; 
+                            msg = String.format(msg,
+                                                docChange.getAddedRevision(), docChange.isConflict()); 
+                            mRev = null;
+                            notifyListeners();
+                        } 
+                    });
+            }
+        }
+
+        public void removeChangeListener(Listener listener) {
+            mListeners.remove(listener);
+            if (mListeners.size() == 0) {
+                // mDoc.removeChangeListener(mChangeListener);
+            }
+        }
+
+        private void notifyListeners() {
+            for (Listener listener : mListeners) {
+                listener.changed();
+            }
+        }
     }
 
     /**
