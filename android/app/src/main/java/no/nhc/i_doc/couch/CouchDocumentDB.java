@@ -622,7 +622,7 @@ public class CouchDocumentDB extends DocumentDB
         return new CouchMetadata(type);
     }
 
-    public void sync()
+    public void sync(final SyncListener listener)
     {
         if (sPushReplication != null) return;
 
@@ -634,27 +634,43 @@ public class CouchDocumentDB extends DocumentDB
             return;
         }
 
+        Replication.ChangeListener changeListener = new Replication.ChangeListener() {
+                public void changed(Replication.ChangeEvent event) {
+                    boolean active = 
+                        (sPushReplication.getStatus() == Replication.ReplicationStatus.REPLICATION_ACTIVE) ||
+                        (sPullReplication.getStatus() == Replication.ReplicationStatus.REPLICATION_ACTIVE);
+                    if (!active) {
+                        listener.onEvent(new SyncEvent(SyncEvent.STOPPED, 0, 0));
+                        sPushReplication = null;
+                        sPullReplication = null;
+                    } else {
+                        int total = sPullReplication.getCompletedChangesCount() + 
+                            sPullReplication.getCompletedChangesCount();
+                        int progress = sPullReplication.getChangesCount() + 
+                            sPullReplication.getChangesCount();
+
+                        listener.onEvent(new SyncEvent(
+                                             SyncEvent.PROGRESS, 
+                                             progress,
+                                             total));
+                    }
+                    Log.d(TAG, " event: " + event);
+                }};
+        
+
         sPushReplication = sSingletonDatabase.createPushReplication(url);
         sPushReplication.setAuthenticator(
             AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
-        sPushReplication.addChangeListener(new Replication.ChangeListener() {
-            public void changed(Replication.ChangeEvent event) {
-                Log.d(TAG, "push sync changed..... removing");
-                //sPushReplication = null;
-            }
-        });
+        sPushReplication.addChangeListener(changeListener);
+        sPushReplication.start();
 
         sPullReplication = sSingletonDatabase.createPullReplication(url);
         sPullReplication.setAuthenticator(
             AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
-        sPullReplication.addChangeListener(new Replication.ChangeListener() {
-            public void changed(Replication.ChangeEvent event) {
-                Log.d(TAG, "pull sync changed..... removing");
-            }
-        });
-
-        sPushReplication.start();
+        sPullReplication.addChangeListener(changeListener);
         sPullReplication.start();
+ 
+        listener.onEvent(new SyncEvent(SyncEvent.STARTED, 0, 0));
     }
 
     public java.util.List<Value> getValueSet(java.lang.Class valueClass)

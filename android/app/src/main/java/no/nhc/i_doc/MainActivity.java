@@ -3,6 +3,7 @@ package no.nhc.i_doc;
 
 import android.app.ActionBar;
 import android.app.FragmentTransaction;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -80,20 +81,37 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         return true;
     }
 
+    private void sync() {
+        final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "Please wait ...", "Syncing", false);
+        DocumentDB.get(this).sync(
+            new DocumentDB.SyncListener() {
+                @Override
+                public void onEvent(DocumentDB.SyncEvent event) {
+                    switch(event.getEvent()) {
+                    case DocumentDB.SyncEvent.STARTED:
+                        break;
+                    case DocumentDB.SyncEvent.STOPPED:
+                        progressDialog.dismiss();
+                        break;
+                    case DocumentDB.SyncEvent.PROGRESS:
+                        progressDialog.setMax(event.getMax());
+                        progressDialog.setProgress(event.getProgress());
+                        break;
+                    }
+                }
+            });
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        switch (item.getItemId()) {
+        case R.id.action_settings:
             startActivity(new Intent(this, SettingsActivity.class));
-        } else if (id == R.id.action_sync) {
-            DocumentDB.get(this).sync();
+            break;
+        case R.id.action_sync:
+            sync();
+            break;
         }
-
         return super.onOptionsItemSelected(item);
     }
 

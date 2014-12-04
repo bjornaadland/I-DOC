@@ -68,10 +68,43 @@ public abstract class DocumentDB
      */
     abstract Metadata createMetadata(java.lang.Class type);
 
+    public static class SyncEvent {
+        public final static int STARTED = 0;
+        public final static int STOPPED = 1;
+        public final static int PROGRESS = 2;
+
+        int mProgress;
+        int mMax;
+        int mEvent;
+        SyncEvent(int event, int progress, int max) {
+            mProgress = progress;
+            mMax = max;
+            mEvent = event;
+        }
+
+        int getEvent() {
+            return mEvent;
+        }
+        int getMax() {
+            return mMax;
+        }
+        int getProgress() {
+            return mProgress;
+        }
+
+    }
+
+    /**
+     *  Listener class for a sync status.
+     */
+    public static interface SyncListener {
+        void onEvent(SyncEvent event);
+    }
+
     /**
      * Sync all data upstream
      */
-    abstract void sync();
+    abstract void sync(SyncListener listener);
 
     /**
      * Get the Value set (enum-like) that can be used
