@@ -54,6 +54,7 @@ public class CouchDocumentDB extends DocumentDB
 
     public static Database sSingletonDatabase;
     public static Replication sPushReplication;
+    public static Replication sPullReplication;
 
     public static Map<Object, MetaMapper> sMetaMappers;
 
@@ -638,17 +639,42 @@ public class CouchDocumentDB extends DocumentDB
             AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
         sPushReplication.addChangeListener(new Replication.ChangeListener() {
             public void changed(Replication.ChangeEvent event) {
-                Log.d(TAG, "sync changed..... removing");
-                sPushReplication = null;
+                Log.d(TAG, "push sync changed..... removing");
+                //sPushReplication = null;
+            }
+        });
+
+        sPullReplication = sSingletonDatabase.createPullReplication(url);
+        sPullReplication.setAuthenticator(
+            AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
+        sPullReplication.addChangeListener(new Replication.ChangeListener() {
+            public void changed(Replication.ChangeEvent event) {
+                Log.d(TAG, "pull sync changed..... removing");
             }
         });
 
         sPushReplication.start();
+        sPullReplication.start();
     }
 
     public java.util.List<Value> getValueSet(java.lang.Class valueClass)
     {
         ArrayList<Value> l = new ArrayList<Value>();
+
+        com.couchbase.lite.Document metadoc = sSingletonDatabase.getExistingDocument("idoc_metainfo");
+
+        if (metadoc != null) {
+            java.util.List<String> lst = (java.util.List<String>)metadoc.getProperties().get("testenum");
+
+            if (lst != null) {
+                for (String s : lst) {
+                    l.add(ValueMapper.createValue(valueClass, s));
+                }
+                return l;
+            }
+        }
+
+        // fallback
         String test = "ABC";
 
         for (int i = 0; i < 3; ++i) {

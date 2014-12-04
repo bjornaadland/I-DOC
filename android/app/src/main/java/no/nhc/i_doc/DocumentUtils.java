@@ -39,7 +39,9 @@ public class DocumentUtils {
     static MediaType GetMediaType(String fileUri) {
         String extension = MimeTypeMap.getFileExtensionFromUrl(fileUri);
         String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-        if (type.startsWith("image/")) {
+        if (type == null) {
+            return MediaType.MEDIA_TYPE_UNKNOWN;
+        } else if (type.startsWith("image/")) {
             return MediaType.MEDIA_TYPE_IMAGE;
         } else if (type.startsWith("video/")) {
              return MediaType.MEDIA_TYPE_VIDEO;
