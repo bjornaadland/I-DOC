@@ -142,6 +142,38 @@ public class ViewEvidenceActivity extends FragmentActivity {
             imageView.setImageDrawable(null);
             DocumentUtils.DisplayImage(doc, imageView);
 
+            imageView.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    String sourceUri = DocumentUtils.GetSourceUri((ImageView)v);
+                    switch (DocumentUtils.GetMediaType(sourceUri)) {
+                        case MEDIA_TYPE_IMAGE:
+                            try {
+                                Intent intent = new Intent();
+                                intent.setAction(Intent.ACTION_VIEW);
+                                intent.setDataAndType(Uri.parse(sourceUri), "image/*");
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                // No valid handler
+                            }
+                            break;
+                        case MEDIA_TYPE_VIDEO:
+                            try {
+                                Intent intent = new Intent();
+                                intent.setAction(Intent.ACTION_VIEW);
+                                intent.setDataAndType(Uri.parse(sourceUri), "video/*");
+                                startActivity(intent);
+                            } catch (Exception e) {
+                                // No valid handler
+                            }
+                            break;
+                        case MEDIA_TYPE_AUDIO:
+                            break;
+                        case MEDIA_TYPE_UNKNOWN:
+                            break;
+                    }
+                }
+            });
+
             ((TextView)rootView.findViewById(R.id.text_evidence_title)).setText(doc.getTitle());
 
             ViewGroup metaContainer = (ViewGroup) rootView.findViewById(R.id.metadataContainer);
