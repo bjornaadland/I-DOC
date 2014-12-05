@@ -1,4 +1,6 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
     <item name="TAG_SOURCE_URI" type="id"/>
     <item name="TAG_IMAGE_URI" type="id"/>
+    <item name="TAG_DOCUMENT_LISTENER" type="id"/>
+    <item name="TAG_DOCUMENT" type="id"/>
 </resources>

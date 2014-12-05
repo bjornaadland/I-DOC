@@ -219,12 +219,15 @@ public class CouchDocumentDB extends DocumentDB
             return mId;
         }
 
-        private java.util.List<Listener> mListeners = new ArrayList<Listener>();
+        private java.util.List<Listener> mListeners;
         
         public void addChangeListener(Listener newListener) {
             com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument((String)mId);
             if (doc == null) {
                 return;
+            }
+            if (mListeners == null) {
+                mListeners = new ArrayList<Listener>();
             }
             mListeners.add(newListener);
             if (mListeners.size() == 1) {
@@ -232,9 +235,7 @@ public class CouchDocumentDB extends DocumentDB
                         @Override 
                         public void changed(com.couchbase.lite.Document.ChangeEvent event) { 
                             com.couchbase.lite.DocumentChange docChange = event.getChange();
-                            String msg = "New revision added: %s. Conflict: %s"; 
-                            msg = String.format(msg,
-                                                docChange.getAddedRevision(), docChange.isConflict()); 
+                            Log.e(TAG, "document " + this.toString() + " changed");
                             mRev = null;
                             notifyListeners();
                         } 
@@ -243,13 +244,20 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public void removeChangeListener(Listener listener) {
+            if (mListeners == null) {
+                return;
+            }
             mListeners.remove(listener);
             if (mListeners.size() == 0) {
+                mListeners = null;
                 // mDoc.removeChangeListener(mChangeListener);
             }
         }
 
         private void notifyListeners() {
+            if (mListeners == null) {
+                return;
+            }
             for (Listener listener : mListeners) {
                 listener.changed();
             }
@@ -450,6 +458,7 @@ public class CouchDocumentDB extends DocumentDB
             liveQuery.addChangeListener(new LiveQuery.ChangeListener() {
                 @Override
                 public void changed(final LiveQuery.ChangeEvent event) {
+                    Log.e(TAG, "LiveQuery " + this.toString() + " changed");
                     notifyChange();
                 }
             });

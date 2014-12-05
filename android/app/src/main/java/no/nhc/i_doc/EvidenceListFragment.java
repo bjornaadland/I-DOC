@@ -55,19 +55,10 @@ class EvidenceAdapter extends BaseAdapter {
         return i;
     }
 
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        if (convertView == null) {
-            LayoutInflater inflater = (LayoutInflater) parent.getContext().
-                    getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(R.layout.item_evidence, parent, false);
-        }
-
-        Document document = evidenceList.getDocument(position);
-
-        TextView titleTextView = (TextView) convertView.findViewById(R.id.titleTextView);
-        ImageView imageView = (ImageView) convertView.findViewById(R.id.imageView);
-        TextView descriptionTextView = (TextView) convertView.findViewById(R.id.descriptionTextView);
+    void populateView(Document document, int position, View view) {
+        TextView titleTextView = (TextView) view.findViewById(R.id.titleTextView);
+        ImageView imageView = (ImageView) view.findViewById(R.id.imageView);
+        TextView descriptionTextView = (TextView) view.findViewById(R.id.descriptionTextView);
 
         if (document == null) {
             titleTextView.setText("");
@@ -91,7 +82,41 @@ class EvidenceAdapter extends BaseAdapter {
             }
         }
 
+    }
+
+    private View inflateView(View convertView, ViewGroup parent) {
+        if (convertView == null) {
+            LayoutInflater inflater = (LayoutInflater) parent.getContext().
+                    getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            convertView = inflater.inflate(R.layout.item_evidence, parent, false);
+        }
         return convertView;
+    }
+
+    @Override
+    public View getView(final int position, View convertView, ViewGroup parent) {
+        final View returnView = inflateView(convertView, parent);
+        final Document document = evidenceList.getDocument(position);
+
+        Document.Listener documentListener = new Document.Listener() {
+                public void changed() {
+                    Log.d("CouchDocumentDB", "changed");
+                    populateView(document, position, returnView);
+                }
+            };
+
+        Document.Listener oldListener = (Document.Listener)returnView.getTag(R.id.TAG_DOCUMENT_LISTENER);
+        Document oldDocument = (Document)returnView.getTag(R.id.TAG_DOCUMENT);
+        if (oldListener != null && oldDocument != null) {
+            oldDocument.removeChangeListener(oldListener);
+        }
+        
+        document.addChangeListener(documentListener);
+        returnView.setTag(R.id.TAG_DOCUMENT, document);
+        returnView.setTag(R.id.TAG_DOCUMENT_LISTENER, documentListener);
+
+        populateView(document, position, returnView);
+        return returnView;
     }
 }
 
