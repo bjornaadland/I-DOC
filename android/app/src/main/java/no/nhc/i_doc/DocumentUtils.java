@@ -1,13 +1,21 @@
 package no.nhc.i_doc;
 
 import android.widget.ImageView;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * This class contains document related utilities which should not be
@@ -15,6 +23,7 @@ import java.util.Date;
  * contain pure data. All other functions can go here.
  */
 public class DocumentUtils {
+    static final String TAG = "DocumentUtils";
 
     public static enum MediaType {
         MEDIA_TYPE_IMAGE,
@@ -85,5 +94,84 @@ public class DocumentUtils {
      */
     static void SetDefaultTitle(Document document) {
         document.setTitle(DateFormat.getDateInstance().format(new Date()));
+    }
+
+    /**
+     * Encode a Metadata object into a json dictionary
+     */
+    public static JSONObject metadataToJSON(Metadata md) {
+        JSONObject obj = new JSONObject();
+        for (Enum property : getEditableMetadataProperties(md.getType())) {
+            Object value = md.get(property);
+            try {
+                if (value != null) {
+                    obj.put(property.toString(), value);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "metadataToJSON: can't get property " + property.toString());
+            }
+        }
+        return obj;
+    }
+
+    /**
+     * Assign a json dictionary to a Metadata object, overwriting the
+     * specified properties.
+     */
+    public static boolean metadataAssignJSON(Metadata md, String json) {
+        return false;
+    }
+
+    /**
+     * Get the set of editable properties for the given metadata type
+     */
+    public static List<Enum> getEditableMetadataProperties(java.lang.Class metadataType) {
+        List<Enum> ret = new ArrayList<Enum>();
+
+        for (Enum e : (Enum[])metadataType.getEnumConstants()) {
+            ret.add(e);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Get the form schema (JSON) of a Metadata object
+     */
+    public static JSONArray getEditJSONSchema(DocumentDB db, Metadata md) {
+        JSONArray ja = new JSONArray();
+        for (Enum property : getEditableMetadataProperties(md.getType())) {
+            JSONObject props = new JSONObject();
+            Metadata.PropertyType pt = md.getPropertyType(property);
+            java.lang.Class dataType = pt.getType();
+            String type = null;
+
+            try {
+                props.put("name", property.toString());
+                props.put("key", property.toString());
+
+                if (java.lang.CharSequence.class.isAssignableFrom(dataType)) {
+                    type = "text";
+                } else if (dataType.getEnclosingClass() == Value.class) {
+                    JSONArray va = new JSONArray();
+
+                    for (Value val : db.getValueSet(dataType)) {
+                        va.put(val.toString());
+                    }
+
+                    type = pt.isList() ? "multienum" : "enum";
+                    props.put("values", va);
+                }
+
+                props.put("type", type);
+
+                if (type != null) {
+                    ja.put(ja.length(), props);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "can't add to schema");
+            }
+        }
+        return ja;
     }
 }

@@ -31,6 +31,10 @@ public abstract class Value {
     public void setKey(Object key) { mKey = key; }
 
     public String toString() {
-        return mKey.toString();
+        if (mKey != null) {
+            return mKey.toString();
+        } else {
+            return "[Value error]";
+        }
     }
 }

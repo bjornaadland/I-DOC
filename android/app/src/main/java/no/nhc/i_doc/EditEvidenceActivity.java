@@ -1,19 +1,29 @@
 package no.nhc.i_doc;
 
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class EditEvidenceActivity extends Activity {
     static final String TAG = "EditEvidenceActivity";
@@ -80,12 +90,10 @@ public class EditEvidenceActivity extends Activity {
     /**
      *  Create an EditText for the specified property in the metadata md
      */
-    private View createMappedText(Metadata md, Enum property, int hintResource) {
+    private View createMappedText(Metadata md, Enum property) {
         TextMap tm = new TextMap();
         EditText et = new EditText(this);
         String prop = (String)md.get(property);
-
-        et.setHint(hintResource);
 
         if (prop != null) {
             et.setText(prop);
@@ -123,7 +131,7 @@ public class EditEvidenceActivity extends Activity {
         java.lang.Class type = pt.getType();
 
         if (java.lang.CharSequence.class.isAssignableFrom(type)) {
-            return createMappedText(md, property, hintResource);
+            return createMappedText(md, property);
         } else if (type.getEnclosingClass() == Value.class) {
             if (pt.isList()) {
                 /* multiple choice */
@@ -137,10 +145,30 @@ public class EditEvidenceActivity extends Activity {
         }
     }
 
+    private Fragment getFormFragment(Metadata md) {
+        Bundle b = new Bundle();
+
+        b.putCharSequence("object", DocumentUtils.metadataToJSON(md).toString());
+        b.putCharSequence("schema", DocumentUtils.getEditJSONSchema(
+                              DocumentDB.get(this), md).toString());
+
+        GenericFormFragment form = new GenericFormFragment();
+        form.setArguments(b);
+        return form;
+    }
+
+    private void editMetadata(Metadata md) {
+        FragmentManager fm = getFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        ft.add(R.id.testEditFragment, getFormFragment(md));
+        ft.addToBackStack(null);
+        ft.commit();
+    }
+
     /**
      *  Create a dynamic view for a metadata object
      */
-    private View createDynamicView(Metadata md) {
+    private View createDynamicView(final Metadata md) {
         LinearLayout root = new LinearLayout(this);
         java.lang.Class type = md.getType();
 
@@ -150,35 +178,21 @@ public class EditEvidenceActivity extends Activity {
                                        ViewGroup.LayoutParams.WRAP_CONTENT));
 
         {
-            TextView tv = new TextView(this);
-            tv.setText(type.getSimpleName());
-            root.addView(tv);
+            Button b = new Button(this);
+            b.setText(type.getSimpleName());
+            b.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    editMetadata(md);
+                }
+            });
+            root.addView(b);
         }
 
-        if (type == Metadata.Victim.class) {
-            root.addView(createControl(md, Metadata.Victim.InterestsViolated, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.ViolationType, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.ParticularVulnerability, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.OriginalCollection, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.ICHLStatus, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.RoleAndBelonging, R.string.meta_prop_notes));
-            root.addView(createControl(md, Metadata.Victim.Notes, R.string.meta_prop_notes));
-
-        } else if (type == Metadata.Witness.class) {
-            root.addView(createControl(md, Metadata.Witness.Rank, R.string.meta_witness_rank));
-            root.addView(createControl(md, Metadata.Witness.Notes, R.string.meta_prop_notes));
-        } else if (type == Metadata.Suspect.class) {
-            root.addView(createControl(md, Metadata.Suspect.Notes, R.string.meta_prop_notes));
-        } else if (type == Metadata.ProtectedObject.class) {
-            root.addView(createControl(md, Metadata.ProtectedObject.Name, R.string.meta_prop_name));
-            root.addView(createControl(md, Metadata.ProtectedObject.Notes, R.string.meta_prop_notes));
-        } else if (type == Metadata.Context.class) {
-            root.addView(createControl(md, Metadata.Context.Name, R.string.meta_prop_name));
-            root.addView(createControl(md, Metadata.Context.Notes, R.string.meta_prop_notes));
-        } else if (type == Metadata.OrgUnit.class) {
-            root.addView(createControl(md, Metadata.OrgUnit.Name, R.string.meta_prop_name));
-            root.addView(createControl(md, Metadata.OrgUnit.Notes, R.string.meta_prop_notes));
+        /*
+        for (Enum e : DocumentUtils.getEditableMetadataProperties(type)) {
+            root.addView(createControl(md, e, 0));
         }
+        */
 
         return root;
     }

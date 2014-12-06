@@ -374,7 +374,11 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public Object mapToUser(Object o) {
-            return new CouchMetadata((Map<String, Object>)o);
+            if (o != null) {
+                return new CouchMetadata((Map<String, Object>)o);
+            } else {
+                return null;
+            }
         }
     }
 
