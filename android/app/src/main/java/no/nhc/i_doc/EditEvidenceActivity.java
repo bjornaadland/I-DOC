@@ -145,24 +145,42 @@ public class EditEvidenceActivity extends Activity {
         }
     }
 
-    private Fragment getFormFragment(Metadata md) {
+    /**
+     *  Produce a Bundle compatible with GenericForm[Fragment|Activity]
+     *  in order to build a form for editing a Metadata object.
+     */
+    private Bundle getFormBundle(Metadata md) {
         Bundle b = new Bundle();
 
         b.putCharSequence("object", DocumentUtils.metadataToJSON(md).toString());
         b.putCharSequence("schema", DocumentUtils.getEditJSONSchema(
                               DocumentDB.get(this), md).toString());
 
-        GenericFormFragment form = new GenericFormFragment();
-        form.setArguments(b);
-        return form;
+        return b;
     }
 
     private void editMetadata(Metadata md) {
-        FragmentManager fm = getFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-        ft.add(R.id.testEditFragment, getFormFragment(md));
-        ft.addToBackStack(null);
-        ft.commit();
+        if (false) {
+            // landscape, etc??
+            /*
+            FragmentManager fm = getFragmentManager();
+            FragmentTransaction ft = fm.beginTransaction();
+            Fragment f = new GenericFormFragment();
+            f.setArguments(getFormBundle(md));
+            ft.add(R.id.testEditFragment, getFormFragment(md));
+            //ft.add(getFormFragment(md), "tag");
+            ft.addToBackStack(null);
+            ft.commit();
+            */
+        } else {
+            // Separate activity:
+            Bundle b = getFormBundle(md);
+            Intent intent = new Intent(this, GenericFormActivity.class);
+
+            intent.putExtras(getFormBundle(md));
+            intent.putExtra("title", md.getType().getSimpleName());
+            startActivity(intent);
+        }
     }
 
     /**

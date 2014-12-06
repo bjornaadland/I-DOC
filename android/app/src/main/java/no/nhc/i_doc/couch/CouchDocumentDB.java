@@ -390,11 +390,12 @@ public class CouchDocumentDB extends DocumentDB
 
         public static Value createValue(java.lang.Class valueClass, Object key) {
             Value v = null;
-            try {
-                v = (Value)valueClass.newInstance();
-                v.setKey(key);
-            } catch (Exception e) {}
-
+            if (key != null) {
+                try {
+                    v = (Value)valueClass.newInstance();
+                    v.setKey(key);
+                } catch (Exception e) {}
+            }
             return v;
         }
 

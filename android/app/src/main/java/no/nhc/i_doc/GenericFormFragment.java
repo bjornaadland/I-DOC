@@ -38,6 +38,14 @@ public class GenericFormFragment extends Fragment {
     // This holds the form data
     private JSONObject mObject;
 
+    /**
+     *  Get the result of the form
+     */
+    public JSONObject getResult() {
+        // TODO: actually pick up data from form ;)
+        return mObject;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,8 +129,17 @@ public class GenericFormFragment extends Fragment {
         return (String)schemaProps.get("name");
     }
 
-    private View buildOne(Map<String, Object> schemaProps) {
+    private LinearLayout createVerticalLayout() {
         LinearLayout ll = new LinearLayout(getActivity());
+        ll.setOrientation(LinearLayout.VERTICAL);
+        ll.setLayoutParams(
+            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
+                                       ViewGroup.LayoutParams.WRAP_CONTENT));
+        return ll;
+    }
+
+    private View buildOne(Map<String, Object> schemaProps) {
+        LinearLayout ll = createVerticalLayout();
         View v = null;
 
         ll.addView(createHeader(translateName(schemaProps)));
@@ -143,11 +160,7 @@ public class GenericFormFragment extends Fragment {
     }
 
     private View buildView(JsonReader schema) {
-        LinearLayout root = new LinearLayout(getActivity());
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setLayoutParams(
-            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
-                                       ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout root = createVerticalLayout();
         try {
             schema.beginArray();
             while (schema.hasNext()) {

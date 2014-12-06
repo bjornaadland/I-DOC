@@ -36,6 +36,10 @@
             android:parentActivityName="no.nhc.i_doc.MainActivity">
         </activity>
 
+        <activity
+            android:name="no.nhc.i_doc.GenericFormActivity">
+        </activity>
+
     </application>
 
   <uses-feature android:name="android.hardware.camera"
