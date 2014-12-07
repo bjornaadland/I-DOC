@@ -25,10 +25,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONException;
+
 public class EditEvidenceActivity extends Activity {
     static final String TAG = "EditEvidenceActivity";
 
-    private Document mDocument;
+    private JSONObject mDocument;
+    private JSONArray mMetadata;
+
+    private int mMetadataIdCounter = 0;
+
+    static final String KEY_M_OBJECT = "m_object";
+    static final String KEY_MID_COUNTER = "mid_counter";
+    static final String KEY_EDITED_MID = "edited_mid";
+
+    static final int ACTIVITY_METADATA_FORM = 1;
 
     private static class TextMap {
         public Metadata mMetadata;
@@ -39,19 +52,54 @@ public class EditEvidenceActivity extends Activity {
     private java.util.List<TextMap> mTextMaps = new java.util.ArrayList<TextMap>();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onSaveInstanceState(Bundle state) {
+        state.putString(KEY_M_OBJECT, mDocument.toString());
+        state.putInt(KEY_MID_COUNTER, mMetadataIdCounter);
+    }
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
         setContentView(R.layout.edit_evidence);
 
-        mDocument = getDocument();
+        if (state == null) {
+            // Load from database
+            try {
+                Document doc = DocumentDB.get(this).getDocument(getIntent().getData());
+                mDocument = DocumentUtils.documentToJSON(doc);
+                mMetadata = mDocument.getJSONArray("metadata");
+
+                for (int i = 0; i < mMetadata.length(); ++i) {
+                    assignMetadataId(mMetadata.getJSONObject(i));
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "can't instantiate editor: " + e);
+            }
+        } else {
+            // Load from bundle
+            String json = state.getString(KEY_M_OBJECT);
+
+            try {
+                mDocument = new JSONObject(json);
+                mMetadata = mDocument.getJSONArray("metadata");
+                mMetadataIdCounter = state.getInt(KEY_MID_COUNTER);
+            } catch (JSONException e) {
+                Log.e(TAG, "can't restore document " + json + " : " + e);
+            }
+
+        }
 
         EditText t = (EditText) findViewById(R.id.editTitle);
 
         if (mDocument != null) {
-            Log.d(TAG, "setting title to " + mDocument.getTitle());
-            t.setText(mDocument.getTitle(), TextView.BufferType.EDITABLE);
+            try {
+                Log.d(TAG, "setting title to " + mDocument.getString("title"));
+                t.setText(mDocument.getString("title"), TextView.BufferType.EDITABLE);
 
-            buildDynamicForm();
+                buildDynamicForm();
+            } catch (JSONException e) {
+                Log.e(TAG, "problem " + e);
+            }
         } else {
             Log.d(TAG, "no document");
             t.setText("[unknown evidence]", TextView.BufferType.NORMAL);
@@ -61,29 +109,53 @@ public class EditEvidenceActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+    }
 
-        if (mDocument != null) {
-            Log.d(TAG, "saving document...");
-            EditText t = (EditText) findViewById(R.id.editTitle);
-            mDocument.setTitle(t.getText().toString());
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) return;
 
-            for (TextMap tm : mTextMaps) {
-                tm.mMetadata.set(tm.mProperty, tm.mEditText.getText().toString());
+        if (requestCode == ACTIVITY_METADATA_FORM) {
+            try {
+                JSONObject newData = new JSONObject(data.getExtras().getString("object"));
+                JSONObject md = findMetadata(newData.getInt("id"));
+
+                if (md == null) {
+                    Log.e(TAG, "can't find metadata to write to: " + newData.toString());
+                    return;
+                }
+
+                for (java.util.Iterator<String> it = newData.keys(); it.hasNext();) {
+                    String key = it.next();
+                    md.put(key, newData.get(key));
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "no metadata to write to");
             }
-
-            DocumentDB.get(this).saveDocument(mDocument);
-            Log.d(TAG, "... done saving");
         }
     }
 
-    private Document getDocument() {
-        return DocumentDB.get(this).getDocument(getIntent().getData());
+    /**
+     *  Associate a metadata JSON object with an id used by the form code.
+     */
+    private void assignMetadataId(JSONObject md) throws JSONException {
+        md.put("id", mMetadataIdCounter++);
     }
 
-    private void buildDynamicForm() {
+    private JSONObject findMetadata(int id) throws JSONException {
+        for (int i = 0; i < mMetadata.length(); ++i) {
+            JSONObject o = mMetadata.getJSONObject(i);
+            if (o.getInt("id") == id) {
+                return o;
+            }
+        }
+        return null;
+    }
+
+    private void buildDynamicForm() throws JSONException {
         ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);
-        for (Metadata md : mDocument.getMetadata()) {
-            vg.addView(createDynamicView(md));
+        for (int i = 0; i < mMetadata.length(); ++i) {
+            vg.addView(createDynamicView(mMetadata.getJSONObject(i)));
         }
     }
 
@@ -126,40 +198,21 @@ public class EditEvidenceActivity extends Activity {
         return tv;
     }
 
-    private View createControl(Metadata md, Enum property, int hintResource) {
-        Metadata.PropertyType pt = md.getPropertyType(property);
-        java.lang.Class type = pt.getType();
-
-        if (java.lang.CharSequence.class.isAssignableFrom(type)) {
-            return createMappedText(md, property);
-        } else if (type.getEnclosingClass() == Value.class) {
-            if (pt.isList()) {
-                /* multiple choice */
-                return createUnsupported("list of " + type.getSimpleName());
-            } else {
-                /* single choice */
-                return createMappedSpinner(md, property, pt, hintResource);
-            }
-        } else {
-            return createUnsupported("no UI for " + type.getSimpleName());
-        }
-    }
-
     /**
      *  Produce a Bundle compatible with GenericForm[Fragment|Activity]
      *  in order to build a form for editing a Metadata object.
      */
-    private Bundle getFormBundle(Metadata md) {
+    private Bundle getFormBundle(JSONObject md) throws JSONException {
         Bundle b = new Bundle();
 
-        b.putCharSequence("object", DocumentUtils.metadataToJSON(md).toString());
+        b.putCharSequence("object", md.toString());
         b.putCharSequence("schema", DocumentUtils.getEditJSONSchema(
-                              DocumentDB.get(this), md).toString());
+                              DocumentDB.get(this), md.getString("type")).toString());
 
         return b;
     }
 
-    private void editMetadata(Metadata md) {
+    private void editMetadata(JSONObject md) throws JSONException {
         if (false) {
             // landscape, etc??
             /*
@@ -178,17 +231,17 @@ public class EditEvidenceActivity extends Activity {
             Intent intent = new Intent(this, GenericFormActivity.class);
 
             intent.putExtras(getFormBundle(md));
-            intent.putExtra("title", md.getType().getSimpleName());
-            startActivity(intent);
+            intent.putExtra("title", md.getString("type"));
+            startActivityForResult(intent, ACTIVITY_METADATA_FORM);
         }
     }
 
     /**
      *  Create a dynamic view for a metadata object
      */
-    private View createDynamicView(final Metadata md) {
+    private View createDynamicView(final JSONObject md) throws JSONException {
         LinearLayout root = new LinearLayout(this);
-        java.lang.Class type = md.getType();
+        String type = md.getString("type");
 
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutParams(
@@ -197,20 +250,18 @@ public class EditEvidenceActivity extends Activity {
 
         {
             Button b = new Button(this);
-            b.setText(type.getSimpleName());
+            b.setText(type);
             b.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    editMetadata(md);
+                    try {
+                        editMetadata(md);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "can't edit. " + e);
+                    }
                 }
             });
             root.addView(b);
         }
-
-        /*
-        for (Enum e : DocumentUtils.getEditableMetadataProperties(type)) {
-            root.addView(createControl(md, e, 0));
-        }
-        */
 
         return root;
     }
@@ -238,11 +289,11 @@ public class EditEvidenceActivity extends Activity {
     /**
      *  Add a new metadata object and update the view
      */
-    private void addMetadata(java.lang.Class type) {
-        Metadata md = DocumentDB.get(this).createMetadata(type);
+    private void addMetadata(java.lang.Class type) throws JSONException {
+        JSONObject md = DocumentUtils.createJSONMetadata(type);
         ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);
+        assignMetadataId(md);
 
-        mDocument.addMetadata(md);
         vg.addView(createDynamicView(md));
     }
 
@@ -251,7 +302,12 @@ public class EditEvidenceActivity extends Activity {
         popup.getMenuInflater().inflate(R.menu.edit_add_meta, popup.getMenu());
         popup.setOnMenuItemClickListener(new OnMenuItemClickListener() {
             public boolean onMenuItemClick(MenuItem item) {
-                addMetadata(menuIdToMetaType(item.getItemId()));
+                try {
+                    addMetadata(menuIdToMetaType(item.getItemId()));
+                } catch (JSONException e) {
+                    // Error adding..
+                    Log.e(TAG, "can't add metadata: " + e);
+                }
                 return true;
             }
         });

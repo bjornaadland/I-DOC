@@ -97,10 +97,52 @@ public class DocumentUtils {
     }
 
     /**
+     * Get a full JSON representation of a document
+     */
+    public static JSONObject documentToJSON(Document d) {
+        if (d == null) return null;
+        JSONObject obj = new JSONObject();
+
+        try {
+            obj.put("uri", d.getUri().toString());
+            obj.put("title", d.getTitle());
+            obj.put("timestamp", d.getTimestamp());
+
+            {
+                JSONArray files = new JSONArray();
+                for (String f : d.getFiles()) {
+                    files.put(f);
+                }
+                obj.put("files", files);
+            }
+
+            {
+                JSONArray metas = new JSONArray();
+                for (Metadata md : d.getMetadata()) {
+                    metas.put(metadataToJSON(md));
+                }
+                obj.put("metadata", metas);
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Can't make JSON for document");
+            return null;
+        }
+
+        return obj;
+    }
+
+    /**
      * Encode a Metadata object into a json dictionary
      */
     public static JSONObject metadataToJSON(Metadata md) {
         JSONObject obj = new JSONObject();
+        try {
+            obj.put("type", md.getType().getSimpleName());
+        } catch (JSONException e) {
+            Log.e(TAG, "can't encode type");
+            return null;
+        }
+
         for (Enum property : getEditableMetadataProperties(md.getType())) {
             Object value = md.get(property);
             try {
@@ -115,10 +157,25 @@ public class DocumentUtils {
     }
 
     /**
+     * Create a new Metadata JSON object
+     */
+    public static JSONObject createJSONMetadata(java.lang.Class type) {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("type", type.getSimpleName());
+            Log.d(TAG, "creating metadata from class: " + type.getName());
+        } catch (JSONException e) {
+            Log.e(TAG, "can't encode type");
+            return null;
+        }
+        return obj;
+    }
+
+    /**
      * Assign a json dictionary to a Metadata object, overwriting the
      * specified properties.
      */
-    public static boolean metadataAssignJSON(Metadata md, String json) {
+    public static boolean metadataAssignJSON(Metadata md, JSONObject json) {
         return false;
     }
 
@@ -133,6 +190,20 @@ public class DocumentUtils {
         }
 
         return ret;
+    }
+
+    /**
+     * Get the form schema (JSON) of a Metadata object
+     * BUG: this way is a workaround for now
+     */
+    public static JSONArray getEditJSONSchema(DocumentDB db, String type) {
+        try {
+            Class<?> mdClass = Class.forName("no.nhc.i_doc.Metadata$" + type);
+            return getEditJSONSchema(db, db.createMetadata(mdClass));
+        } catch (Exception e) {
+            Log.e(TAG, "can't get class from type name: " + type + " exception: " + e.toString());
+            return null;
+        }
     }
 
     /**
