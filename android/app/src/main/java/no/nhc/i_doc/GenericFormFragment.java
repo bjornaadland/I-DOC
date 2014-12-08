@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -133,7 +134,15 @@ public class GenericFormFragment extends Fragment {
     }
 
     private JsonReader readString(String json) {
-        InputStream s = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes;
+        try {
+            bytes = json.getBytes("utf8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            // utf8 is unknown, fall back to best effort
+            bytes = json.getBytes();
+            Log.e(TAG, "Cannot decode utf8");
+        }
+        InputStream s = new ByteArrayInputStream(bytes);
         return new JsonReader(new InputStreamReader(s));
     }
 
