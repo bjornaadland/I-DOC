@@ -49,8 +49,6 @@ public class EditEvidenceActivity extends Activity {
         public EditText mEditText;
     }
 
-    private java.util.List<TextMap> mTextMaps = new java.util.ArrayList<TextMap>();
-
     @Override
     public void onSaveInstanceState(Bundle state) {
         state.putString(KEY_M_OBJECT, mDocument.toString());
@@ -107,8 +105,9 @@ public class EditEvidenceActivity extends Activity {
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    public void onBackPressed() {
+        save();
+        super.onBackPressed();
     }
 
     @Override
@@ -129,9 +128,24 @@ public class EditEvidenceActivity extends Activity {
                     String key = it.next();
                     md.put(key, newData.get(key));
                 }
+                Log.d(TAG, "form data " + newData.toString() + " now in metadata: " + md.toString());
             } catch (JSONException e) {
                 Log.e(TAG, "no metadata to write to");
             }
+        }
+    }
+
+    private void save() {
+        DocumentDB db = DocumentDB.get(this);
+        Document doc = db.getDocument(getIntent().getData());
+        try {
+            EditText t = (EditText) findViewById(R.id.editTitle);
+            mDocument.put("title", t.getText().toString());
+            mDocument.put("metadata", mMetadata);
+
+            DocumentUtils.documentAssignJSON(db, doc, mDocument);
+            db.saveDocument(doc);
+        } catch (JSONException e) {
         }
     }
 
@@ -157,39 +171,6 @@ public class EditEvidenceActivity extends Activity {
         for (int i = 0; i < mMetadata.length(); ++i) {
             vg.addView(createDynamicView(mMetadata.getJSONObject(i)));
         }
-    }
-
-    /**
-     *  Create an EditText for the specified property in the metadata md
-     */
-    private View createMappedText(Metadata md, Enum property) {
-        TextMap tm = new TextMap();
-        EditText et = new EditText(this);
-        String prop = (String)md.get(property);
-
-        if (prop != null) {
-            et.setText(prop);
-        }
-
-        tm.mMetadata = md;
-        tm.mProperty = property;
-        tm.mEditText = et;
-        mTextMaps.add(tm);
-        return et;
-    }
-
-    private View createMappedSpinner(Metadata md,
-                                     Enum property,
-                                     Metadata.PropertyType type,
-                                     int hintResource) {
-        Spinner spinner = new Spinner(this);
-        ArrayAdapter<CharSequence> adapter = new
-            ArrayAdapter(this, android.R.layout.simple_spinner_item,
-                         DocumentDB.get(this).getValueSet(type.getType()));
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(adapter);
-        spinner.setSelection(0);
-        return spinner;
     }
 
     private View createUnsupported(String rep) {

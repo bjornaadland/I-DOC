@@ -27,8 +27,12 @@ public class GenericFormActivity extends Activity {
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    public void onBackPressed() {
+        produceResult();
+        super.onBackPressed();
+    }
+
+    private void produceResult() {
         GenericFormFragment gff = (GenericFormFragment)getFragmentManager().findFragmentByTag("form");
 
         Intent intent = new Intent();

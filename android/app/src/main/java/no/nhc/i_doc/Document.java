@@ -54,6 +54,11 @@ public abstract interface Document
     abstract List<Metadata> getMetadata();
 
     /**
+     *  Overwrite the list of metadata objects
+     */
+    abstract void setMetadata(List<Metadata> metadata);
+
+    /**
      *  Set associated Metadata with the Document
      */
     abstract void addMetadata(Metadata data);

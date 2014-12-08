@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -38,11 +39,59 @@ public class GenericFormFragment extends Fragment {
     // This holds the form data
     private JSONObject mObject;
 
+    private interface ValueMapper {
+        boolean hasValue();
+        Object getJSONValue();
+    }
+
+    private Map<String, ValueMapper> mValueMappers = new HashMap<String, ValueMapper>();
+
+    private static class TextMapper implements ValueMapper {
+        public EditText mEditText;
+
+        public boolean hasValue() {
+            return true;
+        }
+
+        public Object getJSONValue() {
+            return mEditText.getText().toString();
+        }
+    }
+
+    private static class SpinnerMapper implements ValueMapper {
+        public ArrayAdapter mAdapter;
+        public Spinner mSpinner;
+
+        public boolean hasValue() {
+            return mSpinner.getSelectedItemPosition() != AdapterView.INVALID_POSITION;
+        }
+
+        public Object getJSONValue() {
+            int pos = mSpinner.getSelectedItemPosition();
+            if (pos == AdapterView.INVALID_POSITION) {
+                return null;
+            } else {
+                String value = (String)mAdapter.getItem(pos);
+                return value;
+            }
+        }
+    }
+
     /**
      *  Get the result of the form
      */
     public JSONObject getResult() {
-        // TODO: actually pick up data from form ;)
+        try {
+            for (String key : mValueMappers.keySet()) {
+                ValueMapper vm = mValueMappers.get(key);
+                if (vm.hasValue()) {
+                    mObject.put(key, vm.getJSONValue());
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "problem getting value from form: " + e.toString());
+        }
+
         return mObject;
     }
 
@@ -106,12 +155,19 @@ public class GenericFormFragment extends Fragment {
             initialValue = "";
         }
 
+        {
+            TextMapper tm = new TextMapper();
+            tm.mEditText = et;
+            mValueMappers.put(key, tm);
+        }
+
         et.setText(initialValue);
         return et;
     }
 
     private View createSpinner(Map<String, Object> schemaProps) {
         Spinner spinner = new Spinner(getActivity());
+        String key = (String)schemaProps.get("key");
         List<String> values = (List<String>)schemaProps.get("values");
 
         if (values == null) return null;
@@ -120,7 +176,28 @@ public class GenericFormFragment extends Fragment {
             ArrayAdapter(getActivity(), android.R.layout.simple_spinner_item, values);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        spinner.setSelection(0);
+
+        try {
+            String currentValue = mObject.getString(key);
+            int position = 0;
+
+            for (String value : values) {
+                if (currentValue.equals(value)) {
+                    spinner.setSelection(position);
+                    break;
+                }
+                position++;
+            }
+        } catch (JSONException e) {
+        }
+
+        {
+            SpinnerMapper sm = new SpinnerMapper();
+            sm.mAdapter = adapter;
+            sm.mSpinner = spinner;
+            mValueMappers.put(key, sm);
+        }
+
         return spinner;
     }
 

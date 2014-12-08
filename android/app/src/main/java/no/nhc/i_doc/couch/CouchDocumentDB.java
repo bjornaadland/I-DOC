@@ -168,6 +168,17 @@ public class CouchDocumentDB extends DocumentDB
             return l;
         }
 
+        public void setMetadata(java.util.List<Metadata> metadata) {
+            Map<String, Object> props = getRevision().getProperties();
+            java.util.List<Object> existing = (java.util.List<Object>)props.get(KeyMeta);
+
+            existing.clear();
+
+            for (Metadata md : metadata) {
+                existing.add(((CouchMetadata)md).getProperties());
+            }
+        }
+
         public void addMetadata(Metadata metadata)
         {
             CouchMetadata cm = (CouchMetadata)metadata;
@@ -292,40 +303,22 @@ public class CouchDocumentDB extends DocumentDB
         public CouchMetadata(java.lang.Class type) {
             mType = type;
             mProperties = new HashMap<String, Object>();
-            mProperties.put(KeyType, type.getSimpleName().toLowerCase());
+            mProperties.put(KeyType, type.getSimpleName());
         }
 
         public CouchMetadata(Map<String, Object> props) {
-            switch ((String)props.get(KeyType)) {
-            case "person":
-                mType = Metadata.Person.class;
-                break;
-            case "victim":
-                mType = Metadata.Victim.class;
-                break;
-            case "suspect":
-                mType = Metadata.Suspect.class;
-                break;
-            case "witness":
-                mType = Metadata.Witness.class;
-                break;
-            case "protectedobject":
-                mType = Metadata.ProtectedObject.class;
-                break;
-            case "context":
-                mType = Metadata.Context.class;
-                break;
-            case "orgunit":
-                mType = Metadata.OrgUnit.class;
-                break;
-            default:
-                throw new RuntimeException("programming error");
+            java.lang.Class cls = DocumentUtils.getMetadataClass((String)props.get(KeyType));
+
+            if (cls == null) {
+                throw new IllegalArgumentException("invalid type");
             }
+
+            mType = cls;
             mProperties = props;
         }
 
         static String getKey(Enum e) {
-            return e.toString().toLowerCase();
+            return e.toString();
         }
 
         public void set(Enum e, Object value) {
@@ -411,7 +404,14 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public Object mapToDb(Object o) {
-            Value v = (Value)o;
+            Value v = null;
+
+            if (o instanceof String) {
+                // BUG: should validate
+                return o;
+            } else {
+                v = (Value)o;
+            }
             return v.getKey();
         }
 

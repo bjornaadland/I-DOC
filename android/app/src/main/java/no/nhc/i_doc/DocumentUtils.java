@@ -175,8 +175,41 @@ public class DocumentUtils {
      * Assign a json dictionary to a Metadata object, overwriting the
      * specified properties.
      */
-    public static boolean metadataAssignJSON(Metadata md, JSONObject json) {
-        return false;
+    public static boolean documentAssignJSON(DocumentDB db, Document doc, JSONObject json) {
+        try {
+            if (json.has("title")) {
+                doc.setTitle(json.getString("title"));
+            }
+
+            if (json.has("metadata")) {
+                JSONArray a = json.getJSONArray("metadata");
+                List<Metadata> lmd = new ArrayList<Metadata>();
+
+                for (int i = 0; i < a.length(); ++i) {
+                    JSONObject o = a.getJSONObject(i);
+                    java.lang.Class mdClass = getMetadataClass(o.getString("type"));
+                    Metadata md = db.createMetadata(mdClass);
+
+                    for (java.util.Iterator<String> it = o.keys(); it.hasNext();) {
+                        String key = it.next();
+                        try {
+                            Enum prop = Enum.valueOf(mdClass, key);
+                            md.set(prop, o.get(key));
+                        } catch (IllegalArgumentException e) {
+                            Log.d(TAG, "can't make property out of key " + key);
+                        }
+                    }
+
+                    lmd.add(md);
+                }
+
+                doc.setMetadata(lmd);
+            }
+
+            return true;
+        } catch (JSONException e) {
+            return false;
+        }
     }
 
     /**
@@ -193,21 +226,34 @@ public class DocumentUtils {
     }
 
     /**
-     * Get the form schema (JSON) of a Metadata object
-     * BUG: this way is a workaround for now
+     * Create a metadata object from a string type
      */
-    public static JSONArray getEditJSONSchema(DocumentDB db, String type) {
+    public static java.lang.Class getMetadataClass(String type) {
         try {
             Class<?> mdClass = Class.forName("no.nhc.i_doc.Metadata$" + type);
-            return getEditJSONSchema(db, db.createMetadata(mdClass));
+            return mdClass;
         } catch (Exception e) {
             Log.e(TAG, "can't get class from type name: " + type + " exception: " + e.toString());
             return null;
         }
+
     }
 
     /**
      * Get the form schema (JSON) of a Metadata object
+     * BUG: this way is a workaround for now
+     */
+    public static JSONArray getEditJSONSchema(DocumentDB db, String type) {
+        return getEditJSONSchema(db, db.createMetadata(getMetadataClass(type)));
+    }
+
+    /**
+     * Get the form schema (JSON) of a Metadata object. The schema is a list describing
+     * its properties, and each property is denoted by an object having with the keys:
+     * * "name" - display name of the property (BUG: must be translated)
+     * * "key" - the key of the property when its value is stored in a json object
+     * * "type" - property type: ["text"|"enum"|"multienum"]
+     * * "values" - list of possible values for enum and multienm types (BUG: translate)
      */
     public static JSONArray getEditJSONSchema(DocumentDB db, Metadata md) {
         JSONArray ja = new JSONArray();
