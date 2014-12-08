@@ -275,6 +275,8 @@ public class EditEvidenceActivity extends Activity {
         ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);
         assignMetadataId(md);
 
+        mMetadata.put(mMetadata.length(), md);
+
         vg.addView(createDynamicView(md));
     }
 
