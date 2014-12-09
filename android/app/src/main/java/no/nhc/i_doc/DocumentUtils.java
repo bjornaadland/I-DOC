@@ -1,21 +1,36 @@
 package no.nhc.i_doc;
 
-import android.widget.ImageView;
+import android.net.http.AndroidHttpClient;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
 
+import java.io.File;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.DateFormat;
-import java.util.Date;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.FileEntity;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 
 /**
  * This class contains document related utilities which should not be
@@ -290,5 +305,112 @@ public class DocumentUtils {
             }
         }
         return ja;
+    }
+
+    static class ProgressiveEntity implements HttpEntity {
+        HttpEntity mOtherEntity;
+
+        public ProgressiveEntity(HttpEntity otherEntity) {
+            mOtherEntity = otherEntity;
+        }
+
+        @Override
+        public void consumeContent() throws IOException {
+            mOtherEntity.consumeContent();
+        }
+        @Override
+        public InputStream getContent() throws IOException,
+                IllegalStateException {
+            return mOtherEntity.getContent();
+        }
+        @Override
+        public Header getContentEncoding() {
+            return mOtherEntity.getContentEncoding();
+        }
+        @Override
+        public long getContentLength() {
+            return mOtherEntity.getContentLength();
+        }
+        @Override
+        public Header getContentType() {
+            return mOtherEntity.getContentType();
+        }
+        @Override
+        public boolean isChunked() {
+            return mOtherEntity.isChunked();
+        }
+        @Override
+        public boolean isRepeatable() {
+            return mOtherEntity.isRepeatable();
+        }
+        @Override
+        public boolean isStreaming() {
+            return mOtherEntity.isStreaming();
+        }
+
+        @Override
+        public void writeTo(final OutputStream outstream) throws IOException {
+            class ProgressiveOutputStream extends FilterOutputStream {
+                public ProgressiveOutputStream(OutputStream proxy) {
+                    super(proxy);
+                }
+                public void write(int idx) throws IOException {
+                    outstream.write(idx);
+                }
+                public void write(byte[] bts) throws IOException {
+                    outstream.write(bts);
+                }
+                public void flush() throws IOException {
+                    outstream.flush();
+                }
+                public void close() throws IOException {
+                    outstream.close();
+                }
+                public void write(byte[] bts, int st, int end) throws IOException {
+                    // FIXME  Put your progress bar stuff here!
+                    outstream.write(bts, st, end);
+                }
+            }
+
+            mOtherEntity.writeTo(new ProgressiveOutputStream(outstream));
+        }
+
+    };
+
+    static class UploadDocumentTask extends AsyncTask<String, Integer, Boolean> {
+        protected Boolean doInBackground(String... files) {
+            for (String f : files) {
+                HttpClient client = AndroidHttpClient.newInstance("I-DOC");
+                HttpPost post = new HttpPost("http://www.gjermshus.com:8080/new-doc");
+                post.setEntity(new ProgressiveEntity(new FileEntity(new File(f), "image/jpeg")));
+                try {
+                    HttpResponse response = client.execute(post);
+                    HttpEntity entity = response.getEntity();
+                } catch (IOException e) {
+                    Log.e(TAG, "exception during post " + e.toString());
+                    return false;
+                } finally {
+                    client.getConnectionManager().shutdown();
+                }
+            }
+            return true;
+        }
+
+        protected void onPostExecute(Boolean result) {
+            if (result) {
+                Log.e(TAG, "UploadDocumentTask success");
+            } else {
+                Log.e(TAG, "UploadDocumentTask failed");
+            }
+        }
+
+        protected void onProgressUpdate(Integer progress) {
+            Log.e(TAG, "UploadDocumentTask " + progress);
+        }
+    }
+
+    public static void uploadDocument(Document doc) {
+        List<String> files = doc.getFiles();
+        new UploadDocumentTask().execute(files.toArray(new String[files.size()]));
     }
 }

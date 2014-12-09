@@ -22,7 +22,9 @@ import android.view.MenuItem;
 import android.view.MenuInflater;
 
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 class EvidenceAdapter extends BaseAdapter {
     static final String TAG = "EvidenceAdapter";
@@ -97,6 +99,9 @@ class EvidenceAdapter extends BaseAdapter {
     public View getView(final int position, View convertView, ViewGroup parent) {
         final View returnView = inflateView(convertView, parent);
         final Document document = evidenceList.getDocument(position);
+        if (document == null) {
+            return returnView;
+        }
 
         Document.Listener documentListener = new Document.Listener() {
                 public void changed() {
@@ -126,13 +131,29 @@ public class EvidenceListFragment extends ListFragment {
         // Required empty public constructor
     }
 
-    private void deleteSelectedItems() {
+    private List<Document> getSelectedDocuments(DocumentDB db) {
+        List<Document> ret = new ArrayList<Document>();
         ListView listView = getListView();
-        DocumentDB db = DocumentDB.get(getActivity());
         ListAdapter adapter = getListAdapter();
         SparseBooleanArray positions = listView.getCheckedItemPositions();
         for (int i = 0; i < positions.size(); i++) { 
-            db.deleteDocument((Document)adapter.getItem(positions.keyAt(i)));
+            ret.add((Document)adapter.getItem(positions.keyAt(i)));
+        }
+        return ret;
+    }
+
+
+    private void deleteSelectedItems() {
+        DocumentDB db = DocumentDB.get(getActivity());
+        for (Document d  : getSelectedDocuments(db)) {
+            db.deleteDocument(d);
+        }
+    }
+
+    private void uploadSelectedItems() {
+        DocumentDB db = DocumentDB.get(getActivity());
+        for (Document d  : getSelectedDocuments(db)) {
+            DocumentUtils.uploadDocument(d);
         }
     }
 
@@ -153,6 +174,10 @@ public class EvidenceListFragment extends ListFragment {
                     switch (item.getItemId()) {
                     case R.id.menu_evidence_delete:
                         deleteSelectedItems();
+                        mode.finish(); // Action picked, so close the CAB
+                        return true;
+                    case R.id.menu_evidence_upload:
+                        uploadSelectedItems();
                         mode.finish(); // Action picked, so close the CAB
                         return true;
                     default:

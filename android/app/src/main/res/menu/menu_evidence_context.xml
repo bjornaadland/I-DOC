@@ -5,6 +5,11 @@
   <item android:id="@+id/menu_evidence_delete" 
 	android:title="@string/evidence_delete"
 	android:icon="@android:drawable/ic_menu_delete"
+        android:orderInCategory="100"
+	android:showAsAction="always" />
+  <item android:id="@+id/menu_evidence_upload"
+	android:title="@string/evidence_upload"
+	android:icon="@android:drawable/ic_menu_upload"
         android:orderInCategory="100" 
 	android:showAsAction="always" />
 </menu>
