@@ -1,19 +1,20 @@
-// 
+//
 // Very simple file receiver and server.
 //
 package main
+
 import (
 	"github.com/twinj/uuid"
-	"os"
 	"io"
 	"net/http"
+	"os"
 )
 
 func newDocHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
 		u := uuid.NewV4()
-		filename := "/tmp/"+u.String()+".jpg"
-		outfile, err := os.OpenFile(filename, os.O_CREATE | os.O_WRONLY, 0666)
+		filename := "/tmp/" + u.String() + ".jpg"
+		outfile, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
