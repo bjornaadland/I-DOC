@@ -113,11 +113,6 @@ public class GenericFormFragment extends Fragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         String schema = getArguments().getString("schema");

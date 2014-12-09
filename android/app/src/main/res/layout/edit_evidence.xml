@@ -16,7 +16,7 @@
           android:layout_width="fill_parent">
       </EditText>
       <LinearLayout
-          android:id="@+id/editDynamicGroup"
+          android:id="@+id/edit_fragments"
           android:orientation="vertical"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content">

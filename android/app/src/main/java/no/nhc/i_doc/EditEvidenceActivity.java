@@ -43,12 +43,6 @@ public class EditEvidenceActivity extends Activity {
 
     static final int ACTIVITY_METADATA_FORM = 1;
 
-    private static class TextMap {
-        public Metadata mMetadata;
-        public Enum mProperty;
-        public EditText mEditText;
-    }
-
     @Override
     public void onSaveInstanceState(Bundle state) {
         state.putString(KEY_M_OBJECT, mDocument.toString());
@@ -124,14 +118,19 @@ public class EditEvidenceActivity extends Activity {
                     return;
                 }
 
-                for (java.util.Iterator<String> it = newData.keys(); it.hasNext();) {
-                    String key = it.next();
-                    md.put(key, newData.get(key));
-                }
+                copyJSONObject(newData, md);
+
                 Log.d(TAG, "form data " + newData.toString() + " now in metadata: " + md.toString());
             } catch (JSONException e) {
                 Log.e(TAG, "no metadata to write to");
             }
+        }
+    }
+
+    private void copyJSONObject(JSONObject from, JSONObject to) throws JSONException {
+        for (java.util.Iterator<String> it = from.keys(); it.hasNext();) {
+            String key = it.next();
+            to.put(key, from.get(key));
         }
     }
 
@@ -141,6 +140,17 @@ public class EditEvidenceActivity extends Activity {
         try {
             EditText t = (EditText) findViewById(R.id.editTitle);
             mDocument.put("title", t.getText().toString());
+
+            for (int i = 0; i < mMetadata.length(); ++i) {
+                JSONObject md = mMetadata.getJSONObject(i);
+                MetadataEditFragment fragment = (MetadataEditFragment)
+                    getFragmentManager().findFragmentByTag(getFragmentTag(md));
+
+                if (fragment != null) {
+                    copyJSONObject(fragment.getResult(), md);
+                }
+            }
+
             mDocument.put("metadata", mMetadata);
 
             DocumentUtils.documentAssignJSON(db, doc, mDocument);
@@ -166,11 +176,25 @@ public class EditEvidenceActivity extends Activity {
         return null;
     }
 
+    /**
+     *  Return the tag which is used to tie an editor fragment to a specific
+     *  metadata object/id.
+     */
+    private String getFragmentTag(JSONObject metadata) throws JSONException {
+        return "edit" + new Integer(metadata.getInt("id")).toString();
+    }
+
     private void buildDynamicForm() throws JSONException {
-        ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+
         for (int i = 0; i < mMetadata.length(); ++i) {
-            vg.addView(createDynamicView(mMetadata.getJSONObject(i)));
+            JSONObject metadata = mMetadata.getJSONObject(i);
+            transaction.add(R.id.edit_fragments,
+                            createEditFragment(mMetadata.getJSONObject(i)),
+                            getFragmentTag(metadata));
         }
+
+        transaction.commit();
     }
 
     private View createUnsupported(String rep) {
@@ -220,31 +244,12 @@ public class EditEvidenceActivity extends Activity {
     /**
      *  Create a dynamic view for a metadata object
      */
-    private View createDynamicView(final JSONObject md) throws JSONException {
-        LinearLayout root = new LinearLayout(this);
-        String type = md.getString("type");
-
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setLayoutParams(
-            new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
-                                       ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        {
-            Button b = new Button(this);
-            b.setText(type);
-            b.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) {
-                    try {
-                        editMetadata(md);
-                    } catch (JSONException e) {
-                        Log.e(TAG, "can't edit. " + e);
-                    }
-                }
-            });
-            root.addView(b);
-        }
-
-        return root;
+    private Fragment createEditFragment(final JSONObject md) throws JSONException {
+        Bundle bundle = new Bundle();
+        MetadataEditFragment fragment = new MetadataEditFragment();
+        bundle.putCharSequence("object", md.toString());
+        fragment.setArguments(bundle);
+        return fragment;
     }
 
     private java.lang.Class menuIdToMetaType(int id) {
@@ -272,12 +277,14 @@ public class EditEvidenceActivity extends Activity {
      */
     private void addMetadata(java.lang.Class type) throws JSONException {
         JSONObject md = DocumentUtils.createJSONMetadata(type);
-        ViewGroup vg = (ViewGroup) findViewById(R.id.editDynamicGroup);
         assignMetadataId(md);
 
         mMetadata.put(mMetadata.length(), md);
 
-        vg.addView(createDynamicView(md));
+        getFragmentManager().beginTransaction().add(
+            R.id.edit_fragments,
+            createEditFragment(md),
+            getFragmentTag(md)).commit();
     }
 
     public void showAddMetadataPopup(View v) {
