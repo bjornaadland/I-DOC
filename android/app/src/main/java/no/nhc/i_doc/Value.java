@@ -14,7 +14,7 @@ public abstract class Value {
     public static class Vulnerability extends Value {}
     public static class OriginalCollection extends Value {}
     public static class ICHLStatus extends Value {}
-    public static class RoleAndBelonging extends Value {}
+    public static class RoleAndBelonging extends Value {} //BUG: this is different for each metadata
     public static class WitnessType extends Value {}
     public static class Reliability extends Value {}
     public static class LegalStatus extends Value {}

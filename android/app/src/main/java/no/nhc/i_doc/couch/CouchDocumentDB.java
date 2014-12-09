@@ -1,6 +1,7 @@
 package no.nhc.i_doc;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
@@ -23,7 +24,9 @@ import com.couchbase.lite.SavedRevision;
 import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.View;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URL;
@@ -31,6 +34,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONException;
 
 public class CouchDocumentDB extends DocumentDB
 {
@@ -55,6 +62,9 @@ public class CouchDocumentDB extends DocumentDB
     public static Database sSingletonDatabase;
     public static Replication sPushReplication;
     public static Replication sPullReplication;
+
+    public static Resources sResources;
+    public static JSONObject sRawSchema = null;
 
     public static Map<Object, MetaMapper> sMetaMappers;
 
@@ -537,6 +547,8 @@ public class CouchDocumentDB extends DocumentDB
             mDatabase = mManager.getDatabase("idoc");
             sSingletonDatabase = mDatabase;
 
+            sResources = context.getResources();
+
             sMetaMappers = new HashMap<Object, MetaMapper>();
 
             /* Person special properties */
@@ -723,9 +735,51 @@ public class CouchDocumentDB extends DocumentDB
         listener.onEvent(new SyncEvent(SyncEvent.STARTED, 0, 0));
     }
 
+    private java.util.List<Value> getValueSetFromResources(java.lang.Class valueClass) {
+        if (sRawSchema == null) {
+            String data = "";
+            BufferedReader reader = new BufferedReader
+                (new InputStreamReader
+                 (sResources.openRawResource(R.raw.schema)));
+            try {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    data += line;
+                }
+            } catch (IOException e) {
+            }
+            try {
+                sRawSchema = new JSONObject(data);
+            } catch (JSONException e) {
+                throw new RuntimeException("can't read raw schema");
+            }
+        }
+
+        try {
+            JSONObject values = sRawSchema.getJSONObject("values");
+            String key = valueClass.getSimpleName();
+            if (values.has(key)) {
+                JSONArray ja = values.getJSONArray(key);
+                ArrayList<Value> l = new ArrayList<Value>();
+
+                for (int i = 0; i < ja.length(); ++i) {
+                    l.add(ValueMapper.createValue(valueClass, ja.getString(i)));
+                }
+                return l;
+            }
+        } catch (JSONException e) {
+        }
+        return null;
+    }
+
     public java.util.List<Value> getValueSet(java.lang.Class valueClass)
     {
-        ArrayList<Value> l = new ArrayList<Value>();
+        java.util.List<Value> l = null;
+
+        l = getValueSetFromResources(valueClass);
+        if (l != null) return l;
+
+        l = new ArrayList<Value>();
 
         com.couchbase.lite.Document metadoc = sSingletonDatabase.getExistingDocument("idoc_metainfo");
 
