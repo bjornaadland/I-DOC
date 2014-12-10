@@ -1,5 +1,16 @@
 {"values":
- {"OriginalCollection":[
+ {"Gender":[
+     "M",
+     "F",
+     "Unknown",
+     "Collective victim"],
+  "AgeCategory":[
+      "Adult",
+      "Minor",
+      "Senior",
+      "Unknown",
+      "Collective victim"],
+  "OriginalCollection":[
      "Interregional Committee against Torture",
      "Stichting Russian Justice Initiative",
      "Memorial Human Rights Centre",

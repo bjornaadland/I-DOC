@@ -172,7 +172,7 @@ public class CouchDocumentDB extends DocumentDB
             Map<String, Object> props = getRevision().getProperties();
 
             for (Object o : (java.util.List<Object>)props.get(KeyMeta)) {
-                l.add(new CouchMetadata((Map<String, Object>)o));
+                l.add(new CouchMetadata((Map<String, Object>)o, null));
             }
 
             return l;
@@ -241,7 +241,7 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         private java.util.List<Listener> mListeners;
-        
+
         public void addChangeListener(Listener newListener) {
             com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument((String)mId);
             if (doc == null) {
@@ -291,6 +291,7 @@ public class CouchDocumentDB extends DocumentDB
     private static final class CouchMetadata implements Metadata {
         private java.lang.Class mType;
         private Map<String, Object> mProperties;
+        private Object mId;
 
         public java.lang.Class getType() { return mType; }
 
@@ -314,9 +315,15 @@ public class CouchDocumentDB extends DocumentDB
             mType = type;
             mProperties = new HashMap<String, Object>();
             mProperties.put(KeyType, type.getSimpleName());
+            mId = null;
         }
 
-        public CouchMetadata(Map<String, Object> props) {
+        public CouchMetadata(java.lang.Class type, Object id) {
+            this(type);
+            mId = id;
+        }
+
+        public CouchMetadata(Map<String, Object> props, Object id) {
             java.lang.Class cls = DocumentUtils.getMetadataClass((String)props.get(KeyType));
 
             if (cls == null) {
@@ -330,6 +337,9 @@ public class CouchDocumentDB extends DocumentDB
         static String getKey(Enum e) {
             return e.toString();
         }
+
+        public Object getId() { return mId; }
+        public void setId(Object id) { mId = id; }
 
         public void set(Enum e, Object value) {
             if (e.getClass() != mType) {
@@ -362,32 +372,99 @@ public class CouchDocumentDB extends DocumentDB
     }
 
     /**
-     *  Map between Person object and database native representation
+     *  Map between Metadata object (as property)
+     *  and database native representation. This version represents the
+     *  object as a JSON "object".
      */
-    private static class PersonMapper implements MetaMapper {
+    private static class ObjectMapper implements MetaMapper {
+        private final java.lang.Class mType;
+
+        public ObjectMapper(java.lang.Class type) {
+            mType = type;
+        }
+
         public Metadata.PropertyType getPropertyType() {
             return new Metadata.PropertyType() {
-                public java.lang.Class getType() { return Metadata.Person.class; }
+                public java.lang.Class getType() { return mType; }
                 public boolean isList() { return false; }
             };
         }
 
         public Object mapToDb(Object o) {
-            CouchMetadata md = (CouchMetadata)o;
-
-            if (md != null) {
-                Log.d(TAG, "PersonMapper.mapToDb: " + md.getProperties().toString());
-                return md.getProperties();
-            } else {
-                return null;
-            }
+            return o != null ? ((CouchMetadata)o).getProperties() : null;
         }
 
         public Object mapToUser(Object o) {
             if (o != null) {
-                return new CouchMetadata((Map<String, Object>)o);
+                return new CouchMetadata((Map<String, Object>)o, null);
             } else {
                 return null;
+            }
+        }
+    }
+
+    /**
+     *  Map between Metadata object (as property) and database
+     *  native representation as a document in itself, with the specified type.
+     */
+    private static class DocumentMapper implements MetaMapper {
+        private final java.lang.Class mType;
+
+        public DocumentMapper(java.lang.Class type) {
+            mType = type;
+        }
+
+        public Metadata.PropertyType getPropertyType() {
+            return new Metadata.PropertyType() {
+                public java.lang.Class getType() { return mType; }
+                public boolean isList() { return false; }
+            };
+        }
+
+        public Object mapToDb(Object o) {
+            CouchMetadata cm = (CouchMetadata)o;
+            String id = (String)cm.getId();
+            com.couchbase.lite.Document doc = null;
+
+            // first, write value document
+            if (id != null) {
+                doc = sSingletonDatabase.getExistingDocument(id);
+            } else {
+                doc = sSingletonDatabase.createDocument();
+            }
+
+            Map<String, Object> properties = cm.getProperties();
+            properties.put("type", mType.getSimpleName());
+
+            try {
+                UnsavedRevision rev = doc.createRevision();
+                rev.setProperties(properties);
+                rev.save();
+            } catch (CouchbaseLiteException e) {
+                throw new RuntimeException("problem saving document in DocumentMapper");
+            }
+
+            if (id == null) {
+                cm.setId(doc.getId());
+            }
+
+            // Now, this is what is returned as the property value
+            Map<String, Object> propertyValue = new HashMap<String, Object>();
+            propertyValue.put("_id", doc.getId());
+            return propertyValue;
+        }
+
+        public Object mapToUser(Object o) {
+            Map<String, Object> propertyValue = (Map<String, Object>)o;
+            if (propertyValue == null) return null;
+
+            String id = (String)propertyValue.get("_id");
+            com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument(id);
+
+            if (doc == null) {
+                return new CouchMetadata(mType);
+            } else {
+                return new CouchMetadata(doc.getProperties(), doc.getId());
             }
         }
     }
@@ -543,7 +620,8 @@ public class CouchDocumentDB extends DocumentDB
     }
 
     private void mapPerson(Object property) {
-        sMetaMappers.put(property, new PersonMapper());
+        //sMetaMappers.put(property, new ObjectMapper(Metadata.Person.class));
+        sMetaMappers.put(property, new DocumentMapper(Metadata.Person.class));
     }
 
     /**
@@ -561,6 +639,7 @@ public class CouchDocumentDB extends DocumentDB
 
             /* Person special properties */
             mapValue(Metadata.Person.AgeCategory, Value.AgeCategory.class);
+            mapValue(Metadata.Person.Gender, Value.Gender.class);
             mapValue(Metadata.Person.OriginalCollection, Value.OriginalCollection.class);
 
             /* Victim special properties */

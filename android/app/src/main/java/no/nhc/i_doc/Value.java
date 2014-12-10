@@ -8,6 +8,8 @@ package no.nhc.i_doc;
  *  for display in the UI.
  */
 public abstract class Value {
+    public static class Gender extends Value {}
+    public static class AgeCategory extends Value {}
     public static class Interest extends Value {}
     public static class Violation extends Value {}
     public static class ViolationType extends Value {}
@@ -23,7 +25,6 @@ public abstract class Value {
     public static class ImportanceLevel extends Value {}
     public static class ContextForm extends Value {}
     public static class InstitutionalBelonging extends Value {}
-    public static class AgeCategory extends Value {}
 
     private Object mKey;
 

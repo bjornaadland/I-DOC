@@ -110,6 +110,19 @@ public interface Metadata {
     PropertyType getPropertyType(Enum e);
 
     /**
+     *  Get the ID of this metadata, if it exists. Metadata objects
+     *  that can be referred by other metadata objects or several
+     *  documents, need an id.
+     */
+    Object getId();
+
+    /**
+     *  Set the ID of this metadata. It must be the same id that has
+     *  been returned by another metadata. It cannot be generated outside.
+     */
+    void setId(Object id);
+
+    /**
      *  Set a metadata property.
      *  All the properties must come from the same enum, that denotes the
      *  type of the Metadata object.

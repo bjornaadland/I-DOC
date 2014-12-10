@@ -162,6 +162,9 @@ public class DocumentUtils {
         JSONObject obj = new JSONObject();
         try {
             obj.put("type", md.getType().getSimpleName());
+            if (md.getId() != null) {
+                obj.put("id", md.getId());
+            }
         } catch (JSONException e) {
             Log.e(TAG, "can't encode type");
             return null;
@@ -202,6 +205,10 @@ public class DocumentUtils {
     private static Metadata JSONToMetadata(DocumentDB db, JSONObject json) throws JSONException {
         java.lang.Class mdClass = getMetadataClass(json.getString("type"));
         Metadata md = db.createMetadata(mdClass);
+
+        if (json.has("id")) {
+            md.setId(json.getString("id"));
+        }
 
         Log.d(TAG, "JSONToMetadata: " + json.toString());
 
