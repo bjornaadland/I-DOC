@@ -37,18 +37,64 @@ import org.json.JSONException;
 public class GenericFormFragment extends Fragment {
     static final String TAG = "EditJSONActivity";
 
+    /**
+     *  The FormObject has responsibility of mapping
+     *  form values into a JSON object.
+     */
+    private static class FormObject {
+        public Map<String, ValueMapper> mValueMappers = new HashMap<String, ValueMapper>();
+        public JSONObject mObject;
+        public View mView;
+        public String mDefaultType;
+
+        public void initView() {
+            for (String key : mValueMappers.keySet()) {
+                mValueMappers.get(key).initView(mObject, key);
+            }
+        }
+
+        public JSONObject getResult() {
+            if (mObject == null) {
+                mObject = new JSONObject();
+                try {
+                    mObject.put("type", mDefaultType);
+                } catch (JSONException e) {
+                    throw new RuntimeException("no default type specified");
+                }
+            }
+
+            try {
+                for (String key : mValueMappers.keySet()) {
+                    ValueMapper vm = mValueMappers.get(key);
+                    if (vm.hasValue()) {
+                        mObject.put(key, vm.getJSONValue());
+                    }
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "problem getting value from form: " + e.toString());
+            }
+            return mObject;
+        }
+    }
+
     // This holds the form data
-    private JSONObject mObject;
+    private FormObject mFormObject = new FormObject();
 
     private interface ValueMapper {
+        void initView(JSONObject object, String key);
         boolean hasValue();
         Object getJSONValue();
     }
 
-    private Map<String, ValueMapper> mValueMappers = new HashMap<String, ValueMapper>();
-
     private static class TextMapper implements ValueMapper {
         public EditText mEditText;
+
+        public void initView(JSONObject object, String key) {
+            try {
+                mEditText.setText(object.getString(key));
+            } catch (JSONException e) {
+            }
+        }
 
         public boolean hasValue() {
             return true;
@@ -62,6 +108,22 @@ public class GenericFormFragment extends Fragment {
     private static class SpinnerMapper implements ValueMapper {
         public ArrayAdapter mAdapter;
         public Spinner mSpinner;
+        public List<String> mValues;
+
+        public void initView(JSONObject object, String key) {
+            int position = 0;
+            try {
+                String currentValue = object.getString(key);
+                for (String value : mValues) {
+                    if (currentValue.equals(value)) {
+                        mSpinner.setSelection(position);
+                        break;
+                    }
+                    position++;
+                }
+            } catch (JSONException e) {
+            }
+        }
 
         public boolean hasValue() {
             return mSpinner.getSelectedItemPosition() != AdapterView.INVALID_POSITION;
@@ -78,22 +140,30 @@ public class GenericFormFragment extends Fragment {
         }
     }
 
+    private static class ObjectMapper implements ValueMapper {
+        FormObject mForm;
+
+        public void initView(JSONObject object, String key) {
+            try {
+                JSONObject subObject = object.getJSONObject(key);
+                mForm.mObject = subObject;
+                mForm.initView();
+            } catch (JSONException e) {
+            }
+        }
+
+        public boolean hasValue() { return true; }
+
+        public JSONObject getJSONValue() {
+            return mForm.getResult();
+        }
+    }
+
     /**
      *  Get the result of the form
      */
     public JSONObject getResult() {
-        try {
-            for (String key : mValueMappers.keySet()) {
-                ValueMapper vm = mValueMappers.get(key);
-                if (vm.hasValue()) {
-                    mObject.put(key, vm.getJSONValue());
-                }
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "problem getting value from form: " + e.toString());
-        }
-
-        return mObject;
+        return mFormObject.getResult();
     }
 
     @Override
@@ -105,10 +175,10 @@ public class GenericFormFragment extends Fragment {
         Log.d(TAG, "load json editor with object: " + b.getString("object"));
 
         try {
-            mObject = new JSONObject(b.getString("object"));
+            mFormObject.mObject = new JSONObject(b.getString("object"));
         } catch (JSONException e) {
             Log.e(TAG, "bad JSON value sent, starting with empty object");
-            mObject = new JSONObject();
+            mFormObject.mObject = new JSONObject();
         }
     }
 
@@ -121,7 +191,14 @@ public class GenericFormFragment extends Fragment {
         }
         Log.d(TAG, "onCreateView schema: " + schema);
 
-        return buildView(readString(schema));
+        try {
+            View view = buildView(mFormObject, readString(schema));
+            mFormObject.initView();
+            return view;
+        } catch (IOException e) {
+            Log.e(TAG, "JSONException. Bad schema?");
+            return null;
+        }
     }
 
     private Object parseJSON(String s) {
@@ -148,28 +225,18 @@ public class GenericFormFragment extends Fragment {
         return tv;
     }
 
-    private View createText(Map<String, Object> schemaProps) {
+    private View createText(FormObject form, Map<String, Object> schemaProps) {
         EditText et = new EditText(getActivity());
         String key = (String)schemaProps.get("key");
-        String initialValue;
 
-        try {
-            initialValue = mObject.getString(key);
-        } catch (JSONException e) {
-            initialValue = "";
-        }
+        TextMapper tm = new TextMapper();
+        tm.mEditText = et;
+        form.mValueMappers.put(key, tm);
 
-        {
-            TextMapper tm = new TextMapper();
-            tm.mEditText = et;
-            mValueMappers.put(key, tm);
-        }
-
-        et.setText(initialValue);
         return et;
     }
 
-    private View createSpinner(Map<String, Object> schemaProps) {
+    private View createSpinner(FormObject form, Map<String, Object> schemaProps) {
         Spinner spinner = new Spinner(getActivity());
         String key = (String)schemaProps.get("key");
         List<String> values = (List<String>)schemaProps.get("values");
@@ -181,28 +248,29 @@ public class GenericFormFragment extends Fragment {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
-        try {
-            String currentValue = mObject.getString(key);
-            int position = 0;
-
-            for (String value : values) {
-                if (currentValue.equals(value)) {
-                    spinner.setSelection(position);
-                    break;
-                }
-                position++;
-            }
-        } catch (JSONException e) {
-        }
-
         {
             SpinnerMapper sm = new SpinnerMapper();
             sm.mAdapter = adapter;
             sm.mSpinner = spinner;
-            mValueMappers.put(key, sm);
+            sm.mValues = values;
+            form.mValueMappers.put(key, sm);
         }
 
         return spinner;
+    }
+
+    private View mapSubForm(FormObject form, Map<String, Object> schemaProps) {
+        String key = (String)schemaProps.get("key");
+        FormObject subForm = (FormObject)schemaProps.get("form");
+        subForm.mDefaultType = (String)schemaProps.get("defaultType");
+
+        {
+            ObjectMapper om = new ObjectMapper();
+            om.mForm = subForm;
+            form.mValueMappers.put(key, om);
+        }
+
+        return subForm.mView;
     }
 
     private String translateName(Map<String, Object> schemaProps) {
@@ -219,7 +287,7 @@ public class GenericFormFragment extends Fragment {
         return ll;
     }
 
-    private View buildOne(Map<String, Object> schemaProps) {
+    private View buildOneFromProps(FormObject form, Map<String, Object> schemaProps) {
         LinearLayout ll = createVerticalLayout();
         View v = null;
 
@@ -227,10 +295,13 @@ public class GenericFormFragment extends Fragment {
 
         switch ((String)schemaProps.get("type")) {
         case "text":
-            v = createText(schemaProps);
+            v = createText(form, schemaProps);
             break;
         case "enum":
-            v = createSpinner(schemaProps);
+            v = createSpinner(form, schemaProps);
+            break;
+        case "object":
+            v = mapSubForm(form, schemaProps);
             break;
         }
 
@@ -240,45 +311,63 @@ public class GenericFormFragment extends Fragment {
         return ll;
     }
 
-    private View buildView(JsonReader schema) {
-        LinearLayout root = createVerticalLayout();
-        try {
-            schema.beginArray();
+    /**
+     *  Create a view for editing a JSON object that is a value of
+     *  an enclosing JSON object
+     */
+    private FormObject createSubForm(JsonReader schema) throws IOException {
+        FormObject form = new FormObject();
+        form.mView = buildView(form, schema);
+        return form;
+    }
+
+    private void buildViewList(FormObject form,
+                               ViewGroup root,
+                               JsonReader schema) throws IOException {
+        schema.beginArray();
+        while (schema.hasNext()) {
+            Map<String, Object> props = new HashMap<String, Object>();
+            View view = null;
+
+            schema.beginObject();
             while (schema.hasNext()) {
-                Map<String, Object> props = new HashMap<String, Object>();
-
-                schema.beginObject();
-                while (schema.hasNext()) {
-                    String prop = schema.nextName();
-                    switch (prop) {
-                    case "name": // TODO: must be translated
-                    case "key":
-                    case "type":
-                        props.put(prop, schema.nextString());
-                        break;
-                    case "values":
-                        List<String> values = new ArrayList<String>();
-                        schema.beginArray();
-                        while (schema.hasNext()) {
-                            values.add(schema.nextString());
-                        }
-                        schema.endArray();
-                        props.put(prop, values);
-                        break;
-                    default:
-                        schema.skipValue();
-                        break;
+                String prop = schema.nextName();
+                switch (prop) {
+                case "name": // TODO: must be translated
+                case "key":
+                case "type":
+                case "defaultType":
+                    props.put(prop, schema.nextString());
+                break;
+                case "values":
+                    List<String> values = new ArrayList<String>();
+                    schema.beginArray();
+                    while (schema.hasNext()) {
+                        values.add(schema.nextString());
                     }
+                    schema.endArray();
+                    props.put(prop, values);
+                    break;
+                case "schema":
+                    props.put("form", createSubForm(schema));
+                    break;
+                default:
+                    schema.skipValue();
+                    break;
                 }
-                schema.endObject();
-                root.addView(buildOne(props));
             }
-            schema.endArray();
-        } catch (IOException e) {
-            Log.e(TAG, "JSONException. Bad schema?");
-            return null;
-        }
+            schema.endObject();
 
+            if ((view = buildOneFromProps(form, props)) != null) {
+                root.addView(view);
+            }
+        }
+        schema.endArray();
+    }
+
+    private View buildView(FormObject form, JsonReader schema) throws IOException {
+        LinearLayout root = createVerticalLayout();
+        buildViewList(form, root, schema);
         return root;
     }
 }

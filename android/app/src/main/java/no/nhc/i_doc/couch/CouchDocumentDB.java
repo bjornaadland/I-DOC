@@ -373,7 +373,14 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         public Object mapToDb(Object o) {
-            return ((CouchMetadata)o).getProperties();
+            CouchMetadata md = (CouchMetadata)o;
+
+            if (md != null) {
+                Log.d(TAG, "PersonMapper.mapToDb: " + md.getProperties().toString());
+                return md.getProperties();
+            } else {
+                return null;
+            }
         }
 
         public Object mapToUser(Object o) {
@@ -719,7 +726,7 @@ public class CouchDocumentDB extends DocumentDB
                     }
                     Log.d(TAG, " event: " + event);
                 }};
-        
+
 
         sPushReplication = sSingletonDatabase.createPushReplication(url);
         sPushReplication.setAuthenticator(
@@ -732,7 +739,7 @@ public class CouchDocumentDB extends DocumentDB
             AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
         sPullReplication.addChangeListener(changeListener);
         sPullReplication.start();
- 
+
         listener.onEvent(new SyncEvent(SyncEvent.STARTED, 0, 0));
     }
 

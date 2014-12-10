@@ -168,9 +168,13 @@ public class DocumentUtils {
         }
 
         for (Enum property : getEditableMetadataProperties(md.getType())) {
+            Metadata.PropertyType pt = md.getPropertyType(property);
             Object value = md.get(property);
             try {
-                if (value != null) {
+                if (pt.getType().isEnum()) {
+                    obj.put(property.toString(),
+                            value != null ? metadataToJSON((Metadata)value) : null);
+                } else if (value != null) {
                     obj.put(property.toString(), value);
                 }
             } catch (JSONException e) {
@@ -195,6 +199,37 @@ public class DocumentUtils {
         return obj;
     }
 
+    private static Metadata JSONToMetadata(DocumentDB db, JSONObject json) throws JSONException {
+        java.lang.Class mdClass = getMetadataClass(json.getString("type"));
+        Metadata md = db.createMetadata(mdClass);
+
+        Log.d(TAG, "JSONToMetadata: " + json.toString());
+
+        for (java.util.Iterator<String> it = json.keys(); it.hasNext();) {
+            String key = it.next();
+            try {
+                Enum prop = Enum.valueOf(mdClass, key);
+                Metadata.PropertyType pt = md.getPropertyType(prop);
+                Object value = null;
+
+                if (pt.getType().isEnum()) {
+                    JSONObject childObject = json.getJSONObject(key);
+                    if (childObject != null) {
+                        Log.d(TAG, "setting enum childObject from json: " + (childObject != null ? childObject.toString() : "null"));
+                        value = JSONToMetadata(db, childObject);
+                    }
+                } else {
+                    value = json.get(key);
+                }
+                md.set(prop, value);
+            } catch (IllegalArgumentException e) {
+                Log.d(TAG, "can't make property out of key " + key);
+            }
+        }
+
+        return md;
+    }
+
     /**
      * Assign a json dictionary to a Metadata object, overwriting the
      * specified properties.
@@ -210,21 +245,7 @@ public class DocumentUtils {
                 List<Metadata> lmd = new ArrayList<Metadata>();
 
                 for (int i = 0; i < a.length(); ++i) {
-                    JSONObject o = a.getJSONObject(i);
-                    java.lang.Class mdClass = getMetadataClass(o.getString("type"));
-                    Metadata md = db.createMetadata(mdClass);
-
-                    for (java.util.Iterator<String> it = o.keys(); it.hasNext();) {
-                        String key = it.next();
-                        try {
-                            Enum prop = Enum.valueOf(mdClass, key);
-                            md.set(prop, o.get(key));
-                        } catch (IllegalArgumentException e) {
-                            Log.d(TAG, "can't make property out of key " + key);
-                        }
-                    }
-
-                    lmd.add(md);
+                    lmd.add(JSONToMetadata(db, a.getJSONObject(i)));
                 }
 
                 doc.setMetadata(lmd);
@@ -232,6 +253,7 @@ public class DocumentUtils {
 
             return true;
         } catch (JSONException e) {
+            Log.e(TAG, "error assigning json to document: " + e.toString());
             return false;
         }
     }
@@ -276,7 +298,7 @@ public class DocumentUtils {
      * its properties, and each property is denoted by an object having with the keys:
      * * "name" - display name of the property (BUG: must be translated)
      * * "key" - the key of the property when its value is stored in a json object
-     * * "type" - property type: ["text"|"enum"|"multienum"]
+     * * "type" - property type: ["text"|"enum"|"multienum"|"object"]
      * * "values" - list of possible values for enum and multienm types (BUG: translate)
      */
     public static JSONArray getEditJSONSchema(DocumentDB db, Metadata md) {
@@ -293,6 +315,11 @@ public class DocumentUtils {
 
                 if (java.lang.CharSequence.class.isAssignableFrom(dataType)) {
                     type = "text";
+                } else if (dataType.getEnclosingClass() == Metadata.class) {
+                    /* "recursive" type */
+                    type = "object";
+                    props.put("schema", getEditJSONSchema(db, db.createMetadata(dataType)));
+                    props.put("defaultType", dataType.getSimpleName());
                 } else if (dataType.getEnclosingClass() == Value.class) {
                     JSONArray va = new JSONArray();
 
