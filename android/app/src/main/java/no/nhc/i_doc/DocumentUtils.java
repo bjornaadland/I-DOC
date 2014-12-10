@@ -13,6 +13,8 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -309,9 +311,13 @@ public class DocumentUtils {
 
     static class ProgressiveEntity implements HttpEntity {
         HttpEntity mOtherEntity;
+        long mWrittenLength;
+        long mContentLength;
 
         public ProgressiveEntity(HttpEntity otherEntity) {
             mOtherEntity = otherEntity;
+            mContentLength = otherEntity.getContentLength();
+            mWrittenLength = 0;
         }
 
         @Override
@@ -366,9 +372,11 @@ public class DocumentUtils {
                 public void close() throws IOException {
                     outstream.close();
                 }
-                public void write(byte[] bts, int st, int end) throws IOException {
+                public void write(byte[] bts, int off, int len) throws IOException {
                     // FIXME  Put your progress bar stuff here!
-                    outstream.write(bts, st, end);
+                    outstream.write(bts, off, len);
+                    mWrittenLength += len;
+                    Log.e(TAG, "progress " +  ((float)mWrittenLength / mContentLength) * 100);
                 }
             }
 
@@ -381,8 +389,13 @@ public class DocumentUtils {
         protected Boolean doInBackground(String... files) {
             for (String f : files) {
                 HttpClient client = AndroidHttpClient.newInstance("I-DOC");
-                HttpPost post = new HttpPost("http://www.gjermshus.com:8080/new-doc");
-                post.setEntity(new ProgressiveEntity(new FileEntity(new File(f), "image/jpeg")));
+                // HttpPost post = new HttpPost("http://192.168.1.103:9000/new-doc");
+                HttpPost post = new HttpPost("http://www.gjermshus.com:9000/new-doc");
+                try {
+                    post.setEntity(new ProgressiveEntity(new FileEntity(new File(new URI(f)), "image/jpeg")));
+                } catch (URISyntaxException e) {
+                    return false;
+                }
                 try {
                     HttpResponse response = client.execute(post);
                     HttpEntity entity = response.getEntity();
@@ -409,8 +422,11 @@ public class DocumentUtils {
         }
     }
 
-    public static void uploadDocument(Document doc) {
-        List<String> files = doc.getFiles();
-        new UploadDocumentTask().execute(files.toArray(new String[files.size()]));
+    public static void uploadDocuments(List<Document> documents) {
+        for (Document doc : documents) {
+            List<String> files = doc.getFiles();
+            new UploadDocumentTask().execute(
+                    files.toArray(new String[files.size()]));
+        }
     }
 }

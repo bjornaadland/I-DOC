@@ -153,9 +153,11 @@ public class EvidenceListFragment extends ListFragment {
 
     private void uploadSelectedItems() {
         DocumentDB db = DocumentDB.get(getActivity());
+        List<Document> docList = new ArrayList<Document>();
         for (Document d  : getSelectedDocuments(db)) {
-            DocumentUtils.uploadDocument(d);
+            docList.add(d);
         }
+        DocumentUtils.uploadDocuments(docList);
     }
 
     private void setupMultiChoice() {

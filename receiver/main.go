@@ -13,14 +13,14 @@ import (
 func newDocHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == "POST" {
 		u := uuid.NewV4()
-		filename := "/tmp/" + u.String() + ".jpg"
+		filename := uuid.Formatter(u, uuid.Clean) + ".jpg"
 		outfile, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		io.Copy(outfile, req.Body)
-		w.Header().Add("Location", u.String())
+		w.Header().Add("Location", filename)
 		w.WriteHeader(http.StatusCreated)
 	} else {
 		http.Error(w, "invalid method", http.StatusInternalServerError)
@@ -29,5 +29,5 @@ func newDocHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	http.HandleFunc("/new-doc", newDocHandler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":9000", nil)
 }
