@@ -159,8 +159,9 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
         private void populateView(View rootView) {
             ImageView imageView = (ImageView) rootView.findViewById(R.id.evidenceImage);
+            ImageView videoPlayView = (ImageView) rootView.findViewById(R.id.videoPlayImage);
             imageView.setImageDrawable(null);
-            DocumentUtils.DisplayImage(mDocument, imageView);
+            DocumentUtils.DisplayImage(mDocument, imageView, videoPlayView);
 
             imageView.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {

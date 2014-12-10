@@ -77,7 +77,7 @@ class EvidenceAdapter extends BaseAdapter {
 
             imageView.setImageDrawable(null);
 
-            DocumentUtils.DisplayImage(document, imageView);
+            DocumentUtils.DisplayImage(document, imageView, null);
             {
                 Date date = new Date(document.getTimestamp() * 1000L);
                 DateFormat f = DateFormat.getDateTimeInstance();

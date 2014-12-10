@@ -3,6 +3,7 @@ package no.nhc.i_doc;
 import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 
@@ -82,9 +83,12 @@ public class DocumentUtils {
      * Display the document's image in the view.
      * This takes care of thumbnailing and everything related.
      */
-    static void DisplayImage(Document document, ImageView imageView) {
+    static void DisplayImage(Document document, ImageView imageView, ImageView videoPlayView) {
         String fileUri = GetFileUri(document);
         imageView.setTag(R.id.TAG_SOURCE_URI, fileUri);
+        if (videoPlayView != null) {
+            videoPlayView.setVisibility(View.INVISIBLE);
+        }
         switch (GetMediaType(fileUri)) {
             case MEDIA_TYPE_IMAGE:
                 imageView.setTag(R.id.TAG_IMAGE_URI, fileUri);
@@ -94,6 +98,9 @@ public class DocumentUtils {
                 // Load the thumbnail
                 imageView.setTag(R.id.TAG_IMAGE_URI, fileUri + ".jpg");
                 ImageLoader.getInstance().displayImage(fileUri + ".jpg", imageView);
+                if (videoPlayView != null) {
+                    videoPlayView.setVisibility(View.VISIBLE);
+                }
                 break;
             case MEDIA_TYPE_AUDIO:
                 imageView.setTag(R.id.TAG_IMAGE_URI, "");
