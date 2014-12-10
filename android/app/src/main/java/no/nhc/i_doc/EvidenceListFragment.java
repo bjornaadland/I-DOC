@@ -29,10 +29,11 @@ import java.util.List;
 class EvidenceAdapter extends BaseAdapter {
     static final String TAG = "EvidenceAdapter";
     private final DocumentDB.List evidenceList;
+    private DocumentDB.Listener mListener;
 
     public EvidenceAdapter(DocumentDB.List evidenceList) {
         this.evidenceList = evidenceList;
-        this.evidenceList.setListener(new DocumentDB.Listener() {
+        this.evidenceList.addListener(mListener = new DocumentDB.Listener() {
             @Override
             public void changed() {
                 notifyDataSetChanged();

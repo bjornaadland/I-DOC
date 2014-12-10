@@ -32,7 +32,7 @@ public class ViewEvidenceActivity extends FragmentActivity {
         setContentView(R.layout.activity_view_evidence);
 
         mViewEvidencePagerAdapter = new ViewEvidencePagerAdapter(getSupportFragmentManager(),
-                DocumentDB.get(this).getDocumentList());
+                this, DocumentDB.get(this).getDocumentList());
         final ActionBar actionBar = getActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
         mViewPager = (ViewPager) findViewById(R.id.activity_view_evidence);
@@ -50,13 +50,18 @@ public class ViewEvidenceActivity extends FragmentActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+        case R.id.evidence_delete: {
+            Document doc = mViewEvidencePagerAdapter.getDocument(mViewPager.getCurrentItem());
+            DocumentDB.get(this).deleteDocument(doc);
+            break;
+        }
         case R.id.evidence_edit: {
             Intent intent = new Intent(this, EditEvidenceActivity.class);
             Document doc = mViewEvidencePagerAdapter.getDocument(mViewPager.getCurrentItem());
             intent.setData(doc.getUri());
             startActivity(intent);
             break;
-        }            
+        }
         case android.R.id.home:
             // This is called when the Home (Up) button is pressed in the action bar.
             // Create a simple intent that starts the hierarchical parent activity and
@@ -83,16 +88,23 @@ public class ViewEvidenceActivity extends FragmentActivity {
     public static class ViewEvidencePagerAdapter extends FragmentStatePagerAdapter {
 
         private final DocumentDB.List evidenceList;
+        private final DocumentDB.Listener mListener;
+        private final ViewEvidenceActivity mOwner;
 
-        public ViewEvidencePagerAdapter(FragmentManager fm, DocumentDB.List evidenceList) {
+        public ViewEvidencePagerAdapter(FragmentManager fm, ViewEvidenceActivity owner, final DocumentDB.List evidenceList) {
             super(fm);
 
+            this.mOwner = owner;
             this.evidenceList = evidenceList;
 
-            this.evidenceList.setListener(new DocumentDB.Listener() {
+            this.evidenceList.addListener(mListener = new DocumentDB.Listener() {
                 @Override
                 public void changed() {
-                    notifyDataSetChanged();
+                    if (evidenceList.getCount() == 0) {
+                        mOwner.finish();
+                    } else {
+                        notifyDataSetChanged();
+                    }
                 }
             });
         }
@@ -112,8 +124,14 @@ public class ViewEvidenceActivity extends FragmentActivity {
         }
 
         @Override
+        public int getItemPosition(Object item) {
+            return POSITION_NONE;
+        }
+
+        @Override
         public int getCount() {
-            return evidenceList.getCount();
+            int count = evidenceList.getCount();
+            return count;
         }
     }
 

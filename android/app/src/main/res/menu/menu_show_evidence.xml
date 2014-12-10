@@ -2,6 +2,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".ShowEvidenceActivity">
+    <item android:id="@+id/evidence_delete"
+        android:title="@string/evidence_delete"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:showAsAction="always" />
   <item
       android:showAsAction="always"
       android:id="@+id/evidence_edit"

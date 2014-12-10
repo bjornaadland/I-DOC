@@ -25,7 +25,9 @@ public abstract class DocumentDB
     public static interface List {
         int getCount();
         Document getDocument(int position);
-        void setListener(Listener listener);
+
+        // NOTE: DocumentDB will hold a weak reference to the listener object.
+        void addListener(Listener listener);
     }
 
     protected DocumentDB() {}

@@ -276,7 +276,7 @@ public class CouchDocumentDB extends DocumentDB
         }
 
         private void notifyListeners() {
-            if (mListeners == null) {
+            if (mListeners == null || getRevision() == null) {
                 return;
             }
             for (Listener listener : mListeners) {
@@ -462,7 +462,8 @@ public class CouchDocumentDB extends DocumentDB
     private static final class CouchDocumentList implements DocumentDB.List {
         private LiveQuery liveQuery;
         private QueryEnumerator enumerator;
-        private DocumentDB.Listener listener;
+        private WeakHashMap<DocumentDB.Listener, Integer> mListeners =
+                new WeakHashMap<DocumentDB.Listener, Integer>();
         private Handler mChangedHandler;
 
         public CouchDocumentList(LiveQuery lq) {
@@ -497,8 +498,8 @@ public class CouchDocumentDB extends DocumentDB
             }
         }
 
-        public void setListener(DocumentDB.Listener l) {
-            listener = l;
+        public void addListener(DocumentDB.Listener l) {
+            mListeners.put(l, 0);
         }
 
         /**
@@ -518,7 +519,7 @@ public class CouchDocumentDB extends DocumentDB
                 @Override
                 public void handleMessage(Message msg) {
                     enumerator = liveQuery.getRows();
-                    if (listener != null) {
+                    for (DocumentDB.Listener listener : mListeners.keySet() ) {
                         listener.changed();
                     }
                 }
