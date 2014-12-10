@@ -90,12 +90,14 @@ public class ViewEvidenceActivity extends FragmentActivity {
         private final DocumentDB.List evidenceList;
         private final DocumentDB.Listener mListener;
         private final ViewEvidenceActivity mOwner;
+        private final FragmentManager mFragmentManager;
 
         public ViewEvidencePagerAdapter(FragmentManager fm, ViewEvidenceActivity owner, final DocumentDB.List evidenceList) {
             super(fm);
 
             this.mOwner = owner;
             this.evidenceList = evidenceList;
+            this.mFragmentManager = fm;
 
             this.evidenceList.addListener(mListener = new DocumentDB.Listener() {
                 @Override
@@ -125,7 +127,11 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
         @Override
         public int getItemPosition(Object item) {
-            return POSITION_NONE;
+            if(mFragmentManager.getFragments().contains(item)) {
+                return POSITION_NONE;
+            } else {
+                return POSITION_UNCHANGED;
+            }
         }
 
         @Override
