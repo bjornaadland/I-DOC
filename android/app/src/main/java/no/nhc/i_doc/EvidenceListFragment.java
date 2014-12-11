@@ -28,7 +28,7 @@ import java.util.List;
 
 class EvidenceAdapter extends BaseAdapter {
     static final String TAG = "EvidenceAdapter";
-    private final DocumentDB.List evidenceList;
+    private final DocumentDB.List<Document> evidenceList;
     private DocumentDB.Listener mListener;
 
     public EvidenceAdapter(DocumentDB.List evidenceList) {
@@ -50,7 +50,7 @@ class EvidenceAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int i) {
-        return evidenceList.getDocument(i);
+        return evidenceList.getObject(i);
     }
 
     @Override
@@ -99,7 +99,7 @@ class EvidenceAdapter extends BaseAdapter {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         final View returnView = inflateView(convertView, parent);
-        final Document document = evidenceList.getDocument(position);
+        final Document document = evidenceList.getObject(position);
         if (document == null) {
             return returnView;
         }

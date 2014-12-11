@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -80,12 +81,30 @@ public class GenericFormFragment extends Fragment {
     // This holds the form data
     private FormObject mFormObject = new FormObject();
 
+    /**
+     *  Object connecting a property to an editor in the view
+     */
     private interface ValueMapper {
+        /**
+         *  Set up the view initial state. The property can be fetched
+         *  in object, with the given key.
+         */
         void initView(JSONObject object, String key);
+
+        /**
+         *  Get whether this has any value set.
+         */
         boolean hasValue();
+
+        /**
+         *  Get the JSON value for this property
+         */
         Object getJSONValue();
     }
 
+    /**
+     *  A mapper for "text" properties
+     */
     private static class TextMapper implements ValueMapper {
         public EditText mEditText;
 
@@ -105,6 +124,9 @@ public class GenericFormFragment extends Fragment {
         }
     }
 
+    /**
+     *  A mapper for "enum" properties
+     */
     private static class SpinnerMapper implements ValueMapper {
         public ArrayAdapter mAdapter;
         public Spinner mSpinner;
@@ -140,6 +162,9 @@ public class GenericFormFragment extends Fragment {
         }
     }
 
+    /**
+     *  A mapper for "object" properties, which manages a sub form.
+     */
     private static class ObjectMapper implements ValueMapper {
         FormObject mForm;
 
@@ -226,8 +251,18 @@ public class GenericFormFragment extends Fragment {
     }
 
     private View createText(FormObject form, Map<String, Object> schemaProps) {
-        EditText et = new EditText(getActivity());
+        EditText et;
         String key = (String)schemaProps.get("key");
+
+        if (schemaProps.containsKey("searchable")) {
+            AutoCompleteTextView actv = new AutoCompleteTextView(getActivity());
+
+            actv.setAdapter(new SuggestionAdapter(DocumentDB.get(getActivity()),
+                                                  (String)schemaProps.get("searchable")));
+            et = actv;
+        } else {
+            et = new EditText(getActivity());
+        }
 
         TextMapper tm = new TextMapper();
         tm.mEditText = et;
@@ -337,6 +372,7 @@ public class GenericFormFragment extends Fragment {
                 case "key":
                 case "type":
                 case "defaultType":
+                case "searchable":
                     props.put(prop, schema.nextString());
                 break;
                 case "values":

@@ -543,7 +543,7 @@ public class CouchDocumentDB extends DocumentDB
     /**
      *  class wrapping a LiveQuery
      */
-    private static final class CouchDocumentList implements DocumentDB.List {
+    private static final class CouchDocumentList implements DocumentDB.List<Document> {
         private LiveQuery liveQuery;
         private QueryEnumerator enumerator;
         private WeakHashMap<DocumentDB.Listener, Integer> mListeners =
@@ -570,7 +570,7 @@ public class CouchDocumentDB extends DocumentDB
             return enumerator == null ? 0 : enumerator.getCount();
         }
 
-        public Document getDocument(int position) {
+        public Document getObject(int position) {
             QueryRow row = enumerator.getRow(position);
             CouchDocument cd = new CouchDocument(row.getValue());
 
@@ -769,6 +769,50 @@ public class CouchDocumentDB extends DocumentDB
     public Metadata createMetadata(java.lang.Class type)
     {
         return new CouchMetadata(type);
+    }
+
+    public DocumentDB.List<Metadata.PropertyMap> mapMetadata(Enum key) {
+        final View v = mDatabase.getView(key.toString());
+        final java.lang.Class metaType = key.getClass();
+        final String typeName = metaType.getSimpleName();
+        final String keyName = key.toString();
+
+        if (v.getMap() == null) {
+            v.setMap(new Mapper() {
+                public void map(Map<String, Object> document, Emitter emitter) {
+                    if (document.get(KeyType).equals(typeName)) {
+                        emitter.emit(document.get(keyName), document.get("_id"));
+                    }
+                }
+            }, "1");
+        }
+
+        final QueryEnumerator enumerator;
+
+        try {
+            enumerator = v.createQuery().run();
+        } catch (CouchbaseLiteException e) {
+            Log.e(TAG, "can't run property map query: " + e.toString());
+            return null;
+        }
+
+        return new DocumentDB.List<Metadata.PropertyMap>() {
+            public int getCount() {
+                return enumerator.getCount();
+            }
+
+            public Metadata.PropertyMap getObject(int position) {
+                Metadata.PropertyMap map = new Metadata.PropertyMap();
+                QueryRow row = enumerator.getRow(position);
+                map.propertyValue = row.getKey();
+                map.id = row.getValue();
+                return map;
+            }
+
+            public void addListener(DocumentDB.Listener l) {
+                throw new RuntimeException("this List does not support a listener");
+            }
+        };
     }
 
     public void sync(final SyncListener listener)

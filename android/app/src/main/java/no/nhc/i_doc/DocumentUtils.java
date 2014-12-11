@@ -321,6 +321,10 @@ public class DocumentUtils {
                 props.put("key", property.toString());
 
                 if (java.lang.CharSequence.class.isAssignableFrom(dataType)) {
+                    if (property == Metadata.Person.FamilyName ||
+                        property == Metadata.Person.GivenName) {
+                        props.put("searchable", "Person");
+                    }
                     type = "text";
                 } else if (dataType.getEnclosingClass() == Metadata.class) {
                     /* "recursive" type */
