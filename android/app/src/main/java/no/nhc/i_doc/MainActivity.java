@@ -15,6 +15,7 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ProgressBar;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
@@ -24,6 +25,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
     static final String TAG = "MainActivity";
     AppSectionsPagerAdapter mAppSectionsPagerAdapter;
     ViewPager mViewPager;
+    ProgressBar mProgressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +58,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         if (imageLoader.isInited() == false) {
             imageLoader.init(ImageLoaderConfiguration.createDefault(this));
         }
+
+        mProgressBar = (ProgressBar)findViewById(R.id.progressBar);
+        mProgressBar.setMax(100);
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
     }
@@ -147,5 +152,17 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
                 return getText(R.string.evidence);
             }
         }
+    }
+
+    public void showProgress() {
+        mProgressBar.setVisibility(ProgressBar.VISIBLE);
+    }
+
+    public void hideProgress() {
+        mProgressBar.setVisibility(ProgressBar.GONE);
+    }
+
+    public void progress(int progress) {
+        mProgressBar.setProgress(progress);
     }
 }

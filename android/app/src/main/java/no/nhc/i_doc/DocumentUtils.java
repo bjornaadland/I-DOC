@@ -354,83 +354,95 @@ public class DocumentUtils {
         return ja;
     }
 
-    static class ProgressiveEntity implements HttpEntity {
-        HttpEntity mOtherEntity;
-        long mWrittenLength;
-        long mContentLength;
 
-        public ProgressiveEntity(HttpEntity otherEntity) {
-            mOtherEntity = otherEntity;
-            mContentLength = otherEntity.getContentLength();
-            mWrittenLength = 0;
-        }
+    static class UploadDocumentTask extends AsyncTask<String, Integer, Boolean> {
+        UploadListener mListener;
 
-        @Override
-        public void consumeContent() throws IOException {
-            mOtherEntity.consumeContent();
-        }
-        @Override
-        public InputStream getContent() throws IOException,
+        class ProgressiveEntity implements HttpEntity {
+            HttpEntity mOtherEntity;
+            long mWrittenLength;
+            long mContentLength;
+
+            public ProgressiveEntity(HttpEntity otherEntity) {
+                mOtherEntity = otherEntity;
+                mContentLength = otherEntity.getContentLength();
+                mWrittenLength = 0;
+            }
+
+            @Override
+            public void consumeContent() throws IOException {
+                mOtherEntity.consumeContent();
+            }
+            @Override
+            public InputStream getContent() throws IOException,
                 IllegalStateException {
-            return mOtherEntity.getContent();
-        }
-        @Override
-        public Header getContentEncoding() {
-            return mOtherEntity.getContentEncoding();
-        }
-        @Override
-        public long getContentLength() {
-            return mOtherEntity.getContentLength();
-        }
-        @Override
-        public Header getContentType() {
-            return mOtherEntity.getContentType();
-        }
-        @Override
-        public boolean isChunked() {
-            return mOtherEntity.isChunked();
-        }
-        @Override
-        public boolean isRepeatable() {
-            return mOtherEntity.isRepeatable();
-        }
-        @Override
-        public boolean isStreaming() {
-            return mOtherEntity.isStreaming();
-        }
+                return mOtherEntity.getContent();
+            }
+            @Override
+            public Header getContentEncoding() {
+                return mOtherEntity.getContentEncoding();
+            }
+            @Override
+            public long getContentLength() {
+                return mOtherEntity.getContentLength();
+            }
+            @Override
+            public Header getContentType() {
+                return mOtherEntity.getContentType();
+            }
+            @Override
+            public boolean isChunked() {
+                return mOtherEntity.isChunked();
+            }
+            @Override
+            public boolean isRepeatable() {
+                return mOtherEntity.isRepeatable();
+            }
+            @Override
+            public boolean isStreaming() {
+                return mOtherEntity.isStreaming();
+            }
 
-        @Override
-        public void writeTo(final OutputStream outstream) throws IOException {
-            class ProgressiveOutputStream extends FilterOutputStream {
-                public ProgressiveOutputStream(OutputStream proxy) {
-                    super(proxy);
-                }
-                public void write(int idx) throws IOException {
-                    outstream.write(idx);
-                }
-                public void write(byte[] bts) throws IOException {
-                    outstream.write(bts);
-                }
-                public void flush() throws IOException {
-                    outstream.flush();
-                }
-                public void close() throws IOException {
-                    outstream.close();
-                }
-                public void write(byte[] bts, int off, int len) throws IOException {
-                    // FIXME  Put your progress bar stuff here!
-                    outstream.write(bts, off, len);
-                    mWrittenLength += len;
-                    Log.e(TAG, "progress " +  ((float)mWrittenLength / mContentLength) * 100);
+            long mLastProgress = 0;
+
+            private void doProgressUpdate() {
+                long now = System.currentTimeMillis();
+                if (now - mLastProgress > 100 || mWrittenLength == mContentLength) {
+                    int progress = (int)(((float)mWrittenLength / mContentLength) * 100);
+                    publishProgress(progress);
+                    mLastProgress = now;
                 }
             }
 
-            mOtherEntity.writeTo(new ProgressiveOutputStream(outstream));
-        }
+            @Override
+            public void writeTo(final OutputStream outstream) throws IOException {
+                class ProgressiveOutputStream extends FilterOutputStream {
+                    public ProgressiveOutputStream(OutputStream proxy) {
+                        super(proxy);
+                    }
+                    public void write(int idx) throws IOException {
+                        outstream.write(idx);
+                    }
+                    public void write(byte[] bts) throws IOException {
+                        outstream.write(bts);
+                    }
+                    public void flush() throws IOException {
+                        outstream.flush();
+                    }
+                    public void close() throws IOException {
+                        outstream.close();
+                    }
+                    public void write(byte[] bts, int off, int len) throws IOException {
+                        outstream.write(bts, off, len);
+                        mWrittenLength += len;
+                        doProgressUpdate();
+                    }
+                }
+                mOtherEntity.writeTo(new ProgressiveOutputStream(outstream));
+            }
+        };
 
-    };
 
-    static class UploadDocumentTask extends AsyncTask<String, Integer, Boolean> {
         protected Boolean doInBackground(String... files) {
             for (String f : files) {
                 HttpClient client = AndroidHttpClient.newInstance("I-DOC");
@@ -455,22 +467,28 @@ public class DocumentUtils {
         }
 
         protected void onPostExecute(Boolean result) {
-            if (result) {
-                Log.e(TAG, "UploadDocumentTask success");
-            } else {
-                Log.e(TAG, "UploadDocumentTask failed");
-            }
+            mListener.done(result);
         }
 
-        protected void onProgressUpdate(Integer progress) {
-            Log.e(TAG, "UploadDocumentTask " + progress);
+        protected void onProgressUpdate(Integer... progress) {
+            Log.e(TAG, "onProgressUpdate " + progress[0]);
+            mListener.progress(progress);
+        }
+
+        public UploadDocumentTask(UploadListener listener) {
+            mListener = listener;
         }
     }
 
-    public static void uploadDocuments(List<Document> documents) {
+    public static interface UploadListener {
+        void progress(Integer... progress);
+        void done(Boolean result);
+    }
+
+    public static void uploadDocuments(List<Document> documents, UploadListener listener) {
         for (Document doc : documents) {
             List<String> files = doc.getFiles();
-            new UploadDocumentTask().execute(
+            new UploadDocumentTask(listener).execute(
                     files.toArray(new String[files.size()]));
         }
     }

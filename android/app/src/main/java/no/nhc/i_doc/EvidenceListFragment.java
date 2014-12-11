@@ -1,5 +1,6 @@
 package no.nhc.i_doc;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 
 class EvidenceAdapter extends BaseAdapter {
     static final String TAG = "EvidenceAdapter";
@@ -127,6 +129,7 @@ class EvidenceAdapter extends BaseAdapter {
 }
 
 public class EvidenceListFragment extends ListFragment {
+    static final String TAG = "EvidenceListFragment";
 
     public EvidenceListFragment() {
         // Required empty public constructor
@@ -157,8 +160,36 @@ public class EvidenceListFragment extends ListFragment {
         for (Document d  : getSelectedDocuments(db)) {
             docList.add(d);
         }
-        DocumentUtils.uploadDocuments(docList);
+        ((MainActivity)getActivity()).showProgress();
+
+        DocumentUtils.uploadDocuments(
+            docList, 
+            new DocumentUtils.UploadListener() {
+                @Override
+                public void progress(Integer...
+                              progressList) {
+                    int progress = 0;
+                    for (int p : progressList) {
+                        progress += p;
+                    }
+                    progress = progress / progressList.length;
+                    ((MainActivity)getActivity()).progress(progress);
+                    Log.e(TAG, "uploadSelectedItems " + progress);
+                }
+                public void done(Boolean result) {
+                    Log.e(TAG, "uploadSelectedItems done");
+                    ((MainActivity)getActivity()).hideProgress();
+                    if (!result) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                        builder.setMessage("Uploading evidence failed").
+                            setTitle("Upload evidence failed");
+                        AlertDialog dialog = builder.create();
+                        dialog.show();
+                    }
+                }
+            });
     }
+            
 
     private void setupMultiChoice() {
         ListView listView = getListView();
