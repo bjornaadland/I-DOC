@@ -22,9 +22,9 @@ public abstract class DocumentDB
     /**
      *  DocList - a dynamic list of documents
      */
-    public static interface List {
+    public static interface List<T> {
         int getCount();
-        Document getDocument(int position);
+        T getObject(int position);
 
         // NOTE: DocumentDB will hold a weak reference to the listener object.
         void addListener(Listener listener);
@@ -43,7 +43,7 @@ public abstract class DocumentDB
     /**
      *  Get the full list of stored documents.
      */
-    abstract List getDocumentList();
+    abstract List<Document> getDocumentList();
 
     /**
      *  Create an empty document
@@ -69,6 +69,12 @@ public abstract class DocumentDB
      * Create an empty metadata object to be attached to a document
      */
     abstract Metadata createMetadata(java.lang.Class type);
+
+    /**
+     * Return a list of Metadata objects, keyed by the given
+     * metadata property.
+     */
+    abstract List<Metadata.PropertyMap> mapMetadata(Enum key);
 
     public static class SyncEvent {
         public final static int STARTED = 0;

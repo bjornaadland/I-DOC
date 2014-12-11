@@ -7,6 +7,15 @@ public interface Metadata {
     }
 
     /**
+     *  Class used when looking at a property mapped
+     *  across a metadata collection
+     */
+    public static class PropertyMap {
+        public Object propertyValue;
+        public Object id;
+    }
+
+    /**
      *  Listing of the properties of a Person
      */
     public static enum Person {

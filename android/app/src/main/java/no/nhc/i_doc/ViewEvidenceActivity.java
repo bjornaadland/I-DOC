@@ -87,7 +87,7 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
     public static class ViewEvidencePagerAdapter extends FragmentStatePagerAdapter {
 
-        private final DocumentDB.List evidenceList;
+        private final DocumentDB.List<Document> evidenceList;
         private final DocumentDB.Listener mListener;
         private final ViewEvidenceActivity mOwner;
         private final FragmentManager mFragmentManager;
@@ -112,13 +112,13 @@ public class ViewEvidenceActivity extends FragmentActivity {
         }
 
         public Document getDocument(int i) {
-            return evidenceList.getDocument(i);
+            return evidenceList.getObject(i);
         }
 
         @Override
         public Fragment getItem(int i) {
             Fragment fragment = new ViewEvidenceFragment();
-            Document doc = evidenceList.getDocument(i);
+            Document doc = evidenceList.getObject(i);
             Bundle args = new Bundle();
             args.putString(ViewEvidenceFragment.ARG_DOCUMENT_URI, doc.getUri().toString());
             fragment.setArguments(args);
