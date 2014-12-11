@@ -10,8 +10,8 @@
     <string name="action_sync">Sync</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="button_record_video">Record video</string>
-    <string name="button_record_sound">Record sound</string>
     <string name="button_take_picture">Take picture</string>
+    <string name="button_import_media">Import media</string>
     <string name="meta_add">Add metadata</string>
     <string name="meta_victim">Victim</string>
     <string name="meta_witness">Witness</string>
