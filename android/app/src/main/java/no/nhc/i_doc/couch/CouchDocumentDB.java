@@ -332,6 +332,7 @@ public class CouchDocumentDB extends DocumentDB
 
             mType = cls;
             mProperties = props;
+            mId = id;
         }
 
         static String getKey(Enum e) {
