@@ -226,6 +226,12 @@ public class GenericFormFragment extends Fragment {
         }
     }
 
+    private void applySuggestion(FormObject form, String type, SuggestionAdapter.Suggestion sug) {
+        JSONObject obj = DocumentUtils.getSuggestionData(DocumentDB.get(getActivity()), type, sug);
+        form.mObject = obj;
+        form.initView();
+    }
+
     private Object parseJSON(String s) {
         return null;
     }
@@ -250,15 +256,26 @@ public class GenericFormFragment extends Fragment {
         return tv;
     }
 
-    private View createText(FormObject form, Map<String, Object> schemaProps) {
+    private View createText(final FormObject form, final Map<String, Object> schemaProps) {
         EditText et;
         String key = (String)schemaProps.get("key");
 
         if (schemaProps.containsKey("searchable")) {
-            AutoCompleteTextView actv = new AutoCompleteTextView(getActivity());
+            final String searchableType = (String)schemaProps.get("searchable");
+            final AutoCompleteTextView actv = new AutoCompleteTextView(getActivity());
+            final SuggestionAdapter adapter = new
+                SuggestionAdapter(DocumentDB.get(getActivity()),
+                                  searchableType,
+                                  key);
 
-            actv.setAdapter(new SuggestionAdapter(DocumentDB.get(getActivity()),
-                                                  (String)schemaProps.get("searchable")));
+            actv.setAdapter(adapter);
+            actv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Log.d(TAG, "autocomplete item selected: " + Integer.toString(position));
+                    applySuggestion(form, searchableType, adapter.getSuggestion(position));
+                }
+
+            });
             et = actv;
         } else {
             et = new EditText(getActivity());

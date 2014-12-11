@@ -205,7 +205,7 @@ public class DocumentUtils {
 
     private static Metadata JSONToMetadata(DocumentDB db, JSONObject json) throws JSONException {
         java.lang.Class mdClass = getMetadataClass(json.getString("type"));
-        Metadata md = db.createMetadata(mdClass);
+        Metadata md = db.createMetadata(mdClass, null);
 
         if (json.has("id")) {
             md.setId(json.getString("id"));
@@ -298,7 +298,7 @@ public class DocumentUtils {
      * BUG: this way is a workaround for now
      */
     public static JSONArray getEditJSONSchema(DocumentDB db, String type) {
-        return getEditJSONSchema(db, db.createMetadata(getMetadataClass(type)));
+        return getEditJSONSchema(db, db.createMetadata(getMetadataClass(type), null));
     }
 
     /**
@@ -308,6 +308,8 @@ public class DocumentUtils {
      * * "key" - the key of the property when its value is stored in a json object
      * * "type" - property type: ["text"|"enum"|"multienum"|"object"]
      * * "values" - list of possible values for enum and multienm types (BUG: translate)
+     * * "schema" - subschema for "object" values
+     * * "searchable" - metadata type that is searchable from this field
      */
     public static JSONArray getEditJSONSchema(DocumentDB db, Metadata md) {
         JSONArray ja = new JSONArray();
@@ -330,7 +332,7 @@ public class DocumentUtils {
                 } else if (dataType.getEnclosingClass() == Metadata.class) {
                     /* "recursive" type */
                     type = "object";
-                    props.put("schema", getEditJSONSchema(db, db.createMetadata(dataType)));
+                    props.put("schema", getEditJSONSchema(db, db.createMetadata(dataType, null)));
                     props.put("defaultType", dataType.getSimpleName());
                 } else if (dataType.getEnclosingClass() == Value.class) {
                     JSONArray va = new JSONArray();
@@ -355,6 +357,13 @@ public class DocumentUtils {
         return ja;
     }
 
+    /**
+     *  Get suggestion data according to the "searchable" property in the schema
+     */
+    public static JSONObject getSuggestionData(DocumentDB db, String searchableType, SuggestionAdapter.Suggestion sug) {
+        java.lang.Class type = getMetadataClass(searchableType);
+        return metadataToJSON(db.createMetadata(type, sug.mId));
+    }
 
     static class UploadDocumentTask extends AsyncTask<String, Integer, Boolean> {
         UploadListener mListener;

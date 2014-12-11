@@ -66,9 +66,11 @@ public abstract class DocumentDB
     abstract void deleteDocument(Document d);
 
     /**
-     * Create an empty metadata object to be attached to a document
+     * Create a metadata object to be attached to a document.
+     * in order to create a new, empty object, set id to null.
+     * In order to load an object with a known id, pass that id.
      */
-    abstract Metadata createMetadata(java.lang.Class type);
+    abstract Metadata createMetadata(java.lang.Class type, Object id);
 
     /**
      * Return a list of Metadata objects, keyed by the given

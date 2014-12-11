@@ -766,9 +766,19 @@ public class CouchDocumentDB extends DocumentDB
         cd.delete();
     }
 
-    public Metadata createMetadata(java.lang.Class type)
+    public Metadata createMetadata(java.lang.Class type, Object id)
     {
-        return new CouchMetadata(type);
+        if (id == null) {
+            return new CouchMetadata(type);
+        } else {
+            com.couchbase.lite.Document doc = sSingletonDatabase.getExistingDocument((String)id);
+
+            if (doc == null) {
+                return null;
+            } else {
+                return new CouchMetadata(doc.getProperties(), doc.getId());
+            }
+        }
     }
 
     public DocumentDB.List<Metadata.PropertyMap> mapMetadata(Enum key) {

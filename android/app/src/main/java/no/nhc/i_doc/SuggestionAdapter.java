@@ -26,16 +26,20 @@ public class SuggestionAdapter extends BaseAdapter implements Filterable {
     private final DocumentDB mDatabase;
     private final Enum mKeyProperty;
 
-    public SuggestionAdapter(DocumentDB db, String type) {
+    public SuggestionAdapter(DocumentDB db, String metadataType, String propertyName) {
         mDatabase = db;
-        mKeyProperty = Metadata.Person.GivenName;
+
+        java.lang.Class type = DocumentUtils.getMetadataClass(metadataType);
+        mKeyProperty = Enum.valueOf(type, propertyName);
     }
+
+    public Suggestion getSuggestion(int i) { return mSuggestions.get(i); }
 
     @Override
     public int getCount() { return mSuggestions.size(); }
 
     @Override
-    public Object getItem(int i) { return mSuggestions.get(i); }
+    public Object getItem(int i) { return mSuggestions.get(i).mDisplay; }
 
     @Override
     public long getItemId(int i) { return i; }
@@ -54,7 +58,8 @@ public class SuggestionAdapter extends BaseAdapter implements Filterable {
         TextView text = (TextView)view.findViewById(android.R.id.text1);
 
         if (text != null) {
-            text.setText(((Suggestion)getItem(position)).mDisplay);
+            Suggestion suggestion = mSuggestions.get(position);
+            text.setText(suggestion.mDisplay);
         }
 
         return view;
@@ -70,12 +75,9 @@ public class SuggestionAdapter extends BaseAdapter implements Filterable {
 
                 if (constraint != null) {
                     String search = constraint.toString();
-                    Log.d(TAG, "FilterResults: " + Integer.toString(lst.getCount()) + " results for " + search);
 
                     for (int i = 0; i < lst.getCount(); ++i) {
                         Metadata.PropertyMap map = lst.getObject(i);
-
-                        Log.d(TAG, "map suggestion: " + (String)map.propertyValue);
 
                         if (((String)map.propertyValue).startsWith(search)) {
                             Suggestion sug = new Suggestion();
