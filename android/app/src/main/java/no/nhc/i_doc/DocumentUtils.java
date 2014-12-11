@@ -20,6 +20,7 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -445,7 +446,7 @@ public class DocumentUtils {
 
         protected Boolean doInBackground(String... files) {
             for (String f : files) {
-                HttpClient client = AndroidHttpClient.newInstance("I-DOC");
+                AndroidHttpClient client = AndroidHttpClient.newInstance("I-DOC");
                 // HttpPost post = new HttpPost("http://192.168.1.103:9000/new-doc");
                 HttpPost post = new HttpPost("http://www.gjermshus.com:9000/new-doc");
                 try {
@@ -460,36 +461,57 @@ public class DocumentUtils {
                     Log.e(TAG, "exception during post " + e.toString());
                     return false;
                 } finally {
-                    client.getConnectionManager().shutdown();
+                    client.close();
                 }
             }
             return true;
         }
 
         protected void onPostExecute(Boolean result) {
-            mListener.done(result);
+            if (mListener != null) {
+                mListener.done(result);
+            }
+            sUploadDocumentTask = null;
         }
 
         protected void onProgressUpdate(Integer... progress) {
             Log.e(TAG, "onProgressUpdate " + progress[0]);
-            mListener.progress(progress);
+            if (mListener != null) {
+                mListener.progress(progress);
+            }
         }
 
         public UploadDocumentTask(UploadListener listener) {
             mListener = listener;
         }
+
+        public void clearListener() {
+            mListener = null;
+        }
     }
+
+    static UploadDocumentTask sUploadDocumentTask;
 
     public static interface UploadListener {
         void progress(Integer... progress);
         void done(Boolean result);
     }
 
-    public static void uploadDocuments(List<Document> documents, UploadListener listener) {
-        for (Document doc : documents) {
-            List<String> files = doc.getFiles();
-            new UploadDocumentTask(listener).execute(
-                    files.toArray(new String[files.size()]));
+    public static void clearUploadListener() {
+        if (sUploadDocumentTask != null) {
+            sUploadDocumentTask.clearListener();
         }
+    }
+
+    public static void uploadDocuments(List<Document> documents, UploadListener listener) {
+        if (sUploadDocumentTask != null) {
+            return;
+        }
+        sUploadDocumentTask = new UploadDocumentTask(listener);
+        List<String> files = new LinkedList<String>();
+        for (Document doc : documents) {
+             files.addAll(doc.getFiles());
+        }
+        sUploadDocumentTask.execute(files.toArray(new String[files.size()]));
     }
 }

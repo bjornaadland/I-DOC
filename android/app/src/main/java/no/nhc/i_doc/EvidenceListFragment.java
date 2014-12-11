@@ -154,6 +154,12 @@ public class EvidenceListFragment extends ListFragment {
         }
     }
 
+    public void onStop() {
+        Log.e(TAG, "onStop");
+        DocumentUtils.clearUploadListener(); 
+        super.onStop();
+    }
+
     private void uploadSelectedItems() {
         DocumentDB db = DocumentDB.get(getActivity());
         List<Document> docList = new ArrayList<Document>();
@@ -166,8 +172,7 @@ public class EvidenceListFragment extends ListFragment {
             docList, 
             new DocumentUtils.UploadListener() {
                 @Override
-                public void progress(Integer...
-                              progressList) {
+                public void progress(Integer... progressList) {
                     int progress = 0;
                     for (int p : progressList) {
                         progress += p;
