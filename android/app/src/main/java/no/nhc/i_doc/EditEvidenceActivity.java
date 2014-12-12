@@ -4,14 +4,18 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -42,6 +46,79 @@ public class EditEvidenceActivity extends Activity {
     static final String KEY_EDITED_MID = "edited_mid";
 
     static final int ACTIVITY_METADATA_FORM = 1;
+
+    static final boolean USE_FRAGMENTS = false;
+    static final boolean USE_ADAPTER = true;
+
+    private MetadataAdapter mAdapter;
+
+    private class MetadataAdapter extends BaseAdapter {
+        private JSONArray mArray;
+
+        public MetadataAdapter(JSONArray array) {
+            super();
+            mArray = array;
+        }
+
+        @Override
+        public int getCount() {
+            Log.d(TAG, "metadata adapter size: " + Integer.toString(mArray.length()));
+            return mArray.length();
+        }
+
+        @Override
+        public Object getItem(int i) {
+            try {
+                return mArray.getJSONObject(i);
+            } catch (JSONException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public long getItemId(int i) {
+            try {
+                return mArray.getJSONObject(i).getInt("id");
+            } catch (JSONException e) {
+                return i;
+            }
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view;
+            if (convertView == null) {
+                LayoutInflater inflater = (LayoutInflater)parent.getContext().
+                    getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                view = inflater.inflate(android.R.layout.simple_list_item_2, parent, false);
+            } else {
+                view = convertView;
+            }
+
+            JSONObject obj = (JSONObject)getItem(position);
+            TextView t1 = (TextView)view.findViewById(android.R.id.text1);
+            TextView t2 = (TextView)view.findViewById(android.R.id.text2);
+
+            if (obj != null) {
+                try {
+                    t1.setText(obj.getString("type"));
+
+                    if (obj.has("Person")) {
+                        JSONObject person = obj.getJSONObject("Person");
+                        t2.setText(person.getString("FamilyName") + ", " + person.getString("GivenName"));
+                    } else {
+                        t2.setText("data.....");
+                    }
+                    return view;
+                } catch (JSONException e) {
+                }
+            }
+
+            t1.setText("...");
+            t2.setText("...");
+            return view;
+        }
+    }
 
     @Override
     public void onSaveInstanceState(Bundle state) {
@@ -78,7 +155,6 @@ public class EditEvidenceActivity extends Activity {
             } catch (JSONException e) {
                 Log.e(TAG, "can't restore document " + json + " : " + e);
             }
-
         }
 
         EditText t = (EditText) findViewById(R.id.editTitle);
@@ -137,26 +213,29 @@ public class EditEvidenceActivity extends Activity {
     private void save() {
         DocumentDB db = DocumentDB.get(this);
         Document doc = db.getDocument(getIntent().getData());
-        try {
-            EditText t = (EditText) findViewById(R.id.editTitle);
-            mDocument.put("title", t.getText().toString());
 
-            for (int i = 0; i < mMetadata.length(); ++i) {
-                JSONObject md = mMetadata.getJSONObject(i);
-                MetadataEditFragment fragment = (MetadataEditFragment)
-                    getFragmentManager().findFragmentByTag(getFragmentTag(md));
+        if (USE_FRAGMENTS) {
+            try {
+                EditText t = (EditText) findViewById(R.id.editTitle);
+                mDocument.put("title", t.getText().toString());
 
-                if (fragment != null) {
-                    copyJSONObject(fragment.getResult(), md);
+                for (int i = 0; i < mMetadata.length(); ++i) {
+                    JSONObject md = mMetadata.getJSONObject(i);
+                    MetadataEditFragment fragment = (MetadataEditFragment)
+                        getFragmentManager().findFragmentByTag(getFragmentTag(md));
+
+                    if (fragment != null) {
+                        copyJSONObject(fragment.getResult(), md);
+                    }
                 }
+
+                mDocument.put("metadata", mMetadata);
+            } catch (JSONException e) {
             }
-
-            mDocument.put("metadata", mMetadata);
-
-            DocumentUtils.documentAssignJSON(db, doc, mDocument);
-            db.saveDocument(doc);
-        } catch (JSONException e) {
         }
+
+        DocumentUtils.documentAssignJSON(db, doc, mDocument);
+        db.saveDocument(doc);
     }
 
     /**
@@ -185,16 +264,32 @@ public class EditEvidenceActivity extends Activity {
     }
 
     private void buildDynamicForm() throws JSONException {
-        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        if (USE_ADAPTER) {
+            AdapterLinearLayout layout = (AdapterLinearLayout)findViewById(R.id.meta_list_view);
+            mAdapter = new MetadataAdapter(mMetadata);
+            layout.setAdapter(mAdapter);
 
-        for (int i = 0; i < mMetadata.length(); ++i) {
-            JSONObject metadata = mMetadata.getJSONObject(i);
-            transaction.add(R.id.edit_fragments,
-                            createEditFragment(mMetadata.getJSONObject(i)),
-                            getFragmentTag(metadata));
+            layout.setOnItemClickListener(new AdapterLinearLayout.OnItemClickListener() {
+                public void onItemClick(AdapterLinearLayout parent, View view, int position) {
+                    try {
+                        editMetadata((JSONObject)mAdapter.getItem(position));
+                    } catch (JSONException e) {
+                        Log.e(TAG, "can't edit metadata: " + e);
+                    }
+                }
+                });
+        } else if (USE_FRAGMENTS) {
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+
+            for (int i = 0; i < mMetadata.length(); ++i) {
+                JSONObject metadata = mMetadata.getJSONObject(i);
+                transaction.add(R.id.edit_fragments,
+                                createEditFragment(mMetadata.getJSONObject(i)),
+                                getFragmentTag(metadata));
+            }
+
+            transaction.commit();
         }
-
-        transaction.commit();
     }
 
     private View createUnsupported(String rep) {
@@ -281,10 +376,14 @@ public class EditEvidenceActivity extends Activity {
 
         mMetadata.put(mMetadata.length(), md);
 
-        getFragmentManager().beginTransaction().add(
-            R.id.edit_fragments,
-            createEditFragment(md),
-            getFragmentTag(md)).commit();
+        if (USE_ADAPTER) {
+            mAdapter.notifyDataSetChanged();
+        } else if (USE_FRAGMENTS) {
+            getFragmentManager().beginTransaction().add(
+                R.id.edit_fragments,
+                createEditFragment(md),
+                getFragmentTag(md)).commit();
+        }
     }
 
     public void showAddMetadataPopup(View v) {

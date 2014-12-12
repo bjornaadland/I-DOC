@@ -3,4 +3,5 @@
     <item name="TAG_IMAGE_URI" type="id"/>
     <item name="TAG_DOCUMENT_LISTENER" type="id"/>
     <item name="TAG_DOCUMENT" type="id"/>
+    <item name="TAG_INDEX" type="id"/>
 </resources>

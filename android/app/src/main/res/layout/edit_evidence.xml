@@ -15,18 +15,20 @@
           android:layout_height="wrap_content"
           android:layout_width="fill_parent">
       </EditText>
+
+      <no.nhc.i_doc.AdapterLinearLayout
+          android:id="@+id/meta_list_view"
+          android:orientation="vertical"
+          android:layout_width="fill_parent"
+          android:layout_height="wrap_content" />
+
       <LinearLayout
           android:id="@+id/edit_fragments"
           android:orientation="vertical"
           android:layout_width="fill_parent"
           android:layout_height="wrap_content">
       </LinearLayout>
-      <LinearLayout
-          android:id="@+id/testEditFragment"
-          android:orientation="vertical"
-          android:layout_width="fill_parent"
-          android:layout_height="wrap_content">
-      </LinearLayout>
+
       <Button
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"
