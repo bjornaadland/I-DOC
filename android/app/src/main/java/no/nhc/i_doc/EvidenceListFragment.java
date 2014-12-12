@@ -77,8 +77,6 @@ class EvidenceAdapter extends BaseAdapter {
                 titleTextView.setText("No title yet..");
             }
 
-            imageView.setImageDrawable(null);
-
             DocumentUtils.DisplayImage(document, imageView, null);
             {
                 Date date = new Date(document.getTimestamp() * 1000L);

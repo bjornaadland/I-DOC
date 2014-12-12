@@ -47,7 +47,6 @@ public class DocumentUtils {
     public static enum MediaType {
         MEDIA_TYPE_IMAGE,
         MEDIA_TYPE_VIDEO,
-        MEDIA_TYPE_AUDIO,
         MEDIA_TYPE_UNKNOWN
     }
 
@@ -73,8 +72,6 @@ public class DocumentUtils {
             return MediaType.MEDIA_TYPE_IMAGE;
         } else if (type.startsWith("video/")) {
              return MediaType.MEDIA_TYPE_VIDEO;
-        } else if (type.startsWith("audio/")) {
-             return MediaType.MEDIA_TYPE_AUDIO;
         } else {
             return MediaType.MEDIA_TYPE_UNKNOWN;
         }
@@ -87,29 +84,35 @@ public class DocumentUtils {
     static void DisplayImage(Document document, ImageView imageView, ImageView videoPlayView) {
         String fileUri = GetFileUri(document);
         imageView.setTag(R.id.TAG_SOURCE_URI, fileUri);
-        if (videoPlayView != null) {
-            videoPlayView.setVisibility(View.INVISIBLE);
-        }
         switch (GetMediaType(fileUri)) {
             case MEDIA_TYPE_IMAGE:
-                imageView.setTag(R.id.TAG_IMAGE_URI, fileUri);
-                ImageLoader.getInstance().displayImage(fileUri, imageView);
-                break;
-            case MEDIA_TYPE_VIDEO:
-                // Load the thumbnail
-                imageView.setTag(R.id.TAG_IMAGE_URI, fileUri + ".jpg");
-                ImageLoader.getInstance().displayImage(fileUri + ".jpg", imageView);
-                if (videoPlayView != null) {
-                    videoPlayView.setVisibility(View.VISIBLE);
+                if (fileUri.equals(imageView.getTag(R.id.TAG_IMAGE_URI)) == false) {
+                    imageView.setImageDrawable(null);
+                    imageView.setTag(R.id.TAG_IMAGE_URI, fileUri);
+                    ImageLoader.getInstance().displayImage(fileUri, imageView);
+                    if (videoPlayView != null) {
+                        videoPlayView.setVisibility(View.INVISIBLE);
+                    }
                 }
                 break;
-            case MEDIA_TYPE_AUDIO:
-                imageView.setTag(R.id.TAG_IMAGE_URI, "");
-                // TODO: Display audio icon
+            case MEDIA_TYPE_VIDEO:
+                // Display the thumbnail
+                String thumbUri = fileUri + ".jpg";
+                if (thumbUri.equals(imageView.getTag(R.id.TAG_IMAGE_URI)) == false) {
+                    imageView.setImageDrawable(null);
+                    imageView.setTag(R.id.TAG_IMAGE_URI, thumbUri);
+                    ImageLoader.getInstance().displayImage(thumbUri, imageView);
+                    if (videoPlayView != null) {
+                        videoPlayView.setVisibility(View.VISIBLE);
+                    }
+                }
                 break;
             case MEDIA_TYPE_UNKNOWN:
+                imageView.setImageDrawable(null);
                 imageView.setTag(R.id.TAG_IMAGE_URI, "");
-                // TODO: Display generic icon
+                if (videoPlayView != null) {
+                    videoPlayView.setVisibility(View.INVISIBLE);
+                }
                 break;
         }
     }

@@ -160,7 +160,6 @@ public class ViewEvidenceActivity extends FragmentActivity {
         private void populateView(View rootView) {
             ImageView imageView = (ImageView) rootView.findViewById(R.id.evidenceImage);
             ImageView videoPlayView = (ImageView) rootView.findViewById(R.id.videoPlayImage);
-            imageView.setImageDrawable(null);
             DocumentUtils.DisplayImage(mDocument, imageView, videoPlayView);
 
             imageView.setOnClickListener(new View.OnClickListener() {
@@ -186,8 +185,6 @@ public class ViewEvidenceActivity extends FragmentActivity {
                             } catch (Exception e) {
                                 // No valid handler
                             }
-                            break;
-                        case MEDIA_TYPE_AUDIO:
                             break;
                         case MEDIA_TYPE_UNKNOWN:
                             break;
