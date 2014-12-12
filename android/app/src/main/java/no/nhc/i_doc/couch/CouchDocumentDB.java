@@ -348,7 +348,6 @@ public class CouchDocumentDB extends DocumentDB
             }
 
             MetaMapper mapper = sMetaMappers.get(e);
-            Log.d(TAG, "mapper for enum class " + e.getClass().getName() + ": " + mapper);
             mProperties.put(getKey(e), mapper == null ? value : mapper.mapToDb(value));
         }
 

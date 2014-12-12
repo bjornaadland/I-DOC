@@ -1,9 +1,13 @@
 package no.nhc.i_doc;
 
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -23,7 +28,10 @@ import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +129,67 @@ public class GenericFormFragment extends Fragment {
 
         public Object getJSONValue() {
             return mEditText.getText().toString();
+        }
+    }
+
+    /**
+     *  A mapper for "date" properties
+     *  note: this class is non-static so that dialog can be displayed
+     */
+    private class DateMapper implements ValueMapper {
+        public TextView mTextView;
+        private Date mValue;
+
+        private class DatePickerFragment extends DialogFragment
+            implements DatePickerDialog.OnDateSetListener {
+            @Override
+            public Dialog onCreateDialog(Bundle state) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(new Date(getArguments().getLong("value")));
+                return new DatePickerDialog(getActivity(), this,
+                                            cal.get(Calendar.YEAR),
+                                            cal.get(Calendar.MONTH),
+                                            cal.get(Calendar.DAY_OF_MONTH));
+            }
+
+            public void onDateSet(DatePicker view, int year, int month, int day) {
+                Calendar cal = Calendar.getInstance();
+                cal.set(year, month, day);
+                setValue(cal.getTime());
+            }
+        }
+
+        private void setValue(Date date) {
+            mValue = date;
+            DateFormat f = DateFormat.getDateInstance();
+            mTextView.setText(f.format(date));
+        }
+
+        public void initView(JSONObject object, String key) {
+            if (!mTextView.hasOnClickListeners()) {
+                mTextView.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        DatePickerFragment fragment = new DatePickerFragment();
+                        Bundle args = new Bundle();
+                        args.putLong("value", mValue.getTime());
+                        fragment.setArguments(args);
+                        fragment.show(getFragmentManager(), "datePicker");
+                    }
+                });
+            }
+
+            try {
+                setValue(new Date(object.getLong(key)));
+            } catch (JSONException e) {
+                // BUG: "now" is probably a bad default
+                setValue(new Date());
+            }
+        }
+
+        public boolean hasValue() { return true; }
+
+        public Object getJSONValue() {
+            return new Long(mValue.getTime());
         }
     }
 
@@ -286,6 +355,14 @@ public class GenericFormFragment extends Fragment {
             et = new EditText(getActivity());
         }
 
+        switch ((String)schemaProps.get("type")) {
+        case "name":
+            et.setInputType(InputType.TYPE_TEXT_VARIATION_PERSON_NAME);
+            break;
+        default:
+            break;
+        }
+
         if (isContextual(schemaProps)) {
             et.setHint(translateName(schemaProps));
         }
@@ -295,6 +372,17 @@ public class GenericFormFragment extends Fragment {
         form.mValueMappers.put(key, tm);
 
         return et;
+    }
+
+    private View createDate(FormObject form, Map<String, Object> schemaProps) {
+        TextView textView = new TextView(getActivity());
+        DateMapper mapper = new DateMapper();
+        mapper.mTextView = textView;
+        form.mValueMappers.put((String)schemaProps.get("key"), mapper);
+
+        textView.setClickable(true);
+
+        return textView;
     }
 
     private View createSpinner(FormObject form, Map<String, Object> schemaProps) {
@@ -358,7 +446,11 @@ public class GenericFormFragment extends Fragment {
 
         switch ((String)schemaProps.get("type")) {
         case "text":
+        case "name":
             v = createText(form, schemaProps);
+            break;
+        case "date":
+            v = createDate(form, schemaProps);
             break;
         case "enum":
             v = createSpinner(form, schemaProps);

@@ -309,7 +309,7 @@ public class DocumentUtils {
      * its properties, and each property is denoted by an object having with the keys:
      * * "name" - display name of the property (BUG: must be translated)
      * * "key" - the key of the property when its value is stored in a json object
-     * * "type" - property type: ["text"|"enum"|"multienum"|"object"]
+     * * "type" - property type: ["text"|"name"|"date"|"enum"|"multienum"|"object"]
      * * "values" - list of possible values for enum and multienm types (BUG: translate)
      * * "schema" - subschema for "object" values
      * * "searchable" - metadata type that is searchable from this field
@@ -322,6 +322,7 @@ public class DocumentUtils {
             Metadata.PropertyType pt = md.getPropertyType(property);
             java.lang.Class dataType = pt.getType();
             String type = null;
+            boolean contextual = false;
 
             try {
                 props.put("name", property.toString());
@@ -331,15 +332,24 @@ public class DocumentUtils {
                     if (property == Metadata.Person.FamilyName ||
                         property == Metadata.Person.GivenName) {
                         props.put("searchable", "Person");
-                        props.put("contextual", new Boolean(true));
+                        contextual = true;
+                        type = "name";
+                    } else if (property == Metadata.Person.DateOfBirth) {
+                        type = "date";
+                    } else if (property == Metadata.ProtectedObject.Name ||
+                               property == Metadata.Context.Name ||
+                               property == Metadata.OrgUnit.Name) {
+                        contextual = true;
+                        type = "text";
+                    } else {
+                        type = "text";
                     }
-                    type = "text";
                 } else if (dataType.getEnclosingClass() == Metadata.class) {
                     /* "recursive" type */
                     type = "object";
                     props.put("schema", getEditJSONSchema(db, db.createMetadata(dataType, null)));
                     props.put("defaultType", dataType.getSimpleName());
-                    props.put("contextual", new Boolean(true));
+                    contextual = true;
                 } else if (dataType.getEnclosingClass() == Value.class) {
                     JSONArray va = new JSONArray();
 
@@ -351,6 +361,7 @@ public class DocumentUtils {
                     props.put("values", va);
                 }
 
+                if (contextual) props.put("contextual", new Boolean(true));
                 props.put("type", type);
 
                 if (type != null) {
