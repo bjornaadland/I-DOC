@@ -310,6 +310,7 @@ public class DocumentUtils {
      * * "values" - list of possible values for enum and multienm types (BUG: translate)
      * * "schema" - subschema for "object" values
      * * "searchable" - metadata type that is searchable from this field
+     * * "contextual" - set to true if the value of the property is descriptive of the property type
      */
     public static JSONArray getEditJSONSchema(DocumentDB db, Metadata md) {
         JSONArray ja = new JSONArray();
@@ -327,6 +328,7 @@ public class DocumentUtils {
                     if (property == Metadata.Person.FamilyName ||
                         property == Metadata.Person.GivenName) {
                         props.put("searchable", "Person");
+                        props.put("contextual", new Boolean(true));
                     }
                     type = "text";
                 } else if (dataType.getEnclosingClass() == Metadata.class) {
@@ -334,6 +336,7 @@ public class DocumentUtils {
                     type = "object";
                     props.put("schema", getEditJSONSchema(db, db.createMetadata(dataType, null)));
                     props.put("defaultType", dataType.getSimpleName());
+                    props.put("contextual", new Boolean(true));
                 } else if (dataType.getEnclosingClass() == Value.class) {
                     JSONArray va = new JSONArray();
 

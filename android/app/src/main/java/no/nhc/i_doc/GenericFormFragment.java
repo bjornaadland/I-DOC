@@ -256,6 +256,11 @@ public class GenericFormFragment extends Fragment {
         return tv;
     }
 
+    private static boolean isContextual(Map<String, Object> schemaProps) {
+        return schemaProps.containsKey("contextual") &&
+            ((Boolean)schemaProps.get("contextual")).booleanValue();
+    }
+
     private View createText(final FormObject form, final Map<String, Object> schemaProps) {
         EditText et;
         String key = (String)schemaProps.get("key");
@@ -279,6 +284,10 @@ public class GenericFormFragment extends Fragment {
             et = actv;
         } else {
             et = new EditText(getActivity());
+        }
+
+        if (isContextual(schemaProps)) {
+            et.setHint(translateName(schemaProps));
         }
 
         TextMapper tm = new TextMapper();
@@ -343,7 +352,9 @@ public class GenericFormFragment extends Fragment {
         LinearLayout ll = createVerticalLayout();
         View v = null;
 
-        ll.addView(createHeader(translateName(schemaProps)));
+        if (!isContextual(schemaProps)) {
+            ll.addView(createHeader(translateName(schemaProps)));
+        }
 
         switch ((String)schemaProps.get("type")) {
         case "text":
@@ -385,13 +396,16 @@ public class GenericFormFragment extends Fragment {
             while (schema.hasNext()) {
                 String prop = schema.nextName();
                 switch (prop) {
-                case "name": // TODO: must be translated
+                case "name":
                 case "key":
                 case "type":
                 case "defaultType":
                 case "searchable":
                     props.put(prop, schema.nextString());
                 break;
+                case "contextual":
+                    props.put(prop, schema.nextBoolean());
+                    break;
                 case "values":
                     List<String> values = new ArrayList<String>();
                     schema.beginArray();

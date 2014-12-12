@@ -12,6 +12,8 @@ public class GenericFormActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        setContentView(R.layout.generic_form);
+
         if (savedInstanceState == null) {
             Intent i = getIntent();
             Bundle b = i.getExtras();
@@ -22,7 +24,7 @@ public class GenericFormActivity extends Activity {
             // Show fragment
             GenericFormFragment gff = new GenericFormFragment();
             gff.setArguments(b);
-            getFragmentManager().beginTransaction().add(android.R.id.content, gff, "form").commit();
+            getFragmentManager().beginTransaction().add(R.id.ScrollView01, gff, "form").commit();
         }
     }
 
