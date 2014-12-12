@@ -44,7 +44,7 @@ import org.json.JSONException;
  *  This fragment displays a form UI.
  */
 public class GenericFormFragment extends Fragment {
-    static final String TAG = "EditJSONActivity";
+    static final String TAG = "GenericFormFragment";
 
     /**
      *  The FormObject has responsibility of mapping
@@ -57,12 +57,6 @@ public class GenericFormFragment extends Fragment {
         public String mDefaultType;
 
         public void initView() {
-            for (String key : mValueMappers.keySet()) {
-                mValueMappers.get(key).initView(mObject, key);
-            }
-        }
-
-        public JSONObject getResult() {
             if (mObject == null) {
                 mObject = new JSONObject();
                 try {
@@ -72,6 +66,12 @@ public class GenericFormFragment extends Fragment {
                 }
             }
 
+            for (String key : mValueMappers.keySet()) {
+                mValueMappers.get(key).initView(mObject, key);
+            }
+        }
+
+        public JSONObject getResult() {
             try {
                 for (String key : mValueMappers.keySet()) {
                     ValueMapper vm = mValueMappers.get(key);
@@ -239,11 +239,9 @@ public class GenericFormFragment extends Fragment {
 
         public void initView(JSONObject object, String key) {
             try {
-                JSONObject subObject = object.getJSONObject(key);
-                mForm.mObject = subObject;
-                mForm.initView();
-            } catch (JSONException e) {
-            }
+                mForm.mObject = object.getJSONObject(key);
+            } catch (JSONException e) {}
+            mForm.initView();
         }
 
         public boolean hasValue() { return true; }
