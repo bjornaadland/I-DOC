@@ -49,6 +49,7 @@ public class EditEvidenceActivity extends Activity {
 
     static final boolean USE_FRAGMENTS = false;
     static final boolean USE_ADAPTER = true;
+    static final boolean EDIT_INSTANTLY = true;
 
     private MetadataAdapter mAdapter;
 
@@ -106,8 +107,10 @@ public class EditEvidenceActivity extends Activity {
                     if (obj.has("Person")) {
                         JSONObject person = obj.getJSONObject("Person");
                         t2.setText(person.getString("FamilyName") + ", " + person.getString("GivenName"));
+                    } else if (obj.has("Name")) {
+                        t2.setText(obj.getString("Name"));
                     } else {
-                        t2.setText("data.....");
+                        t2.setText("");
                     }
                     return view;
                 } catch (JSONException e) {
@@ -197,6 +200,12 @@ public class EditEvidenceActivity extends Activity {
                 copyJSONObject(newData, md);
 
                 Log.d(TAG, "form data " + newData.toString() + " now in metadata: " + md.toString());
+
+                if (USE_ADAPTER) {
+                    mAdapter.notifyDataSetChanged();
+                }
+
+                save();
             } catch (JSONException e) {
                 Log.e(TAG, "no metadata to write to");
             }
@@ -378,6 +387,10 @@ public class EditEvidenceActivity extends Activity {
 
         if (USE_ADAPTER) {
             mAdapter.notifyDataSetChanged();
+
+            if (EDIT_INSTANTLY) {
+                editMetadata(md);
+            }
         } else if (USE_FRAGMENTS) {
             getFragmentManager().beginTransaction().add(
                 R.id.edit_fragments,
