@@ -19,8 +19,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.TextView;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class ViewEvidenceActivity extends FragmentActivity {
 
@@ -149,12 +157,25 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
 
         private ViewGroup addGroup(CharSequence header, ViewGroup container) {
-            ViewGroup layoutView = new LinearLayout(getActivity());
+            LinearLayout layoutView = new LinearLayout(getActivity());
+            LinearLayout.LayoutParams layoutParams =
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                                              LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutView.setLayoutParams(layoutParams);
+            layoutView.setOrientation(LinearLayout.VERTICAL);
             TextView headerView = new TextView(getActivity());
+            headerView.setTextAppearance(getActivity(), android.R.style.TextAppearance_Medium);
             headerView.setText(header);
             layoutView.addView(headerView);
             container.addView(layoutView);
             return layoutView;
+        }
+
+        private void addGroupData(String data, ViewGroup group) {
+            TextView dataView = new TextView(getActivity());
+            dataView.setPadding(20, 0, 0, 0);
+            dataView.setText(data);
+            group.addView(dataView);
         }
 
         private void populateView(View rootView) {
@@ -196,15 +217,41 @@ public class ViewEvidenceActivity extends FragmentActivity {
 
             ViewGroup metaContainer = (ViewGroup) rootView.findViewById(R.id.metadataContainer);
             metaContainer.removeAllViews();
-            ViewGroup group;
-            group = addGroup(getText(R.string.victims), metaContainer);
-            group = addGroup(getText(R.string.suspects), metaContainer);
-            group = addGroup(getText(R.string.witnesses), metaContainer);
-            group = addGroup(getText(R.string.context), metaContainer);
-            group = addGroup(getText(R.string.incident), metaContainer);
-            group = addGroup(getText(R.string.protected_object), metaContainer);
-            group = addGroup(getText(R.string.organizational_unit), metaContainer);
-            
+            JSONObject jsonDocument = DocumentUtils.documentToJSON(mDocument);
+            JSONArray metadata = null;
+            try {
+                metadata = jsonDocument.getJSONArray("metadata");
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return;
+            }
+            Map<String, ViewGroup> groupMap = new HashMap<String, ViewGroup>();
+            for (int i = 0; i < metadata.length(); ++i) {
+                try {
+                    JSONObject obj = metadata.getJSONObject(i);
+                    String groupType = obj.getString("type");
+                    ViewGroup group;
+
+                    if (!groupMap.containsKey(groupType)) {
+                        group = addGroup(groupType, metaContainer);
+                        groupMap.put(groupType, group);
+                    } else {
+                        group = groupMap.get(groupType);
+                    }
+                    
+                    String data = "";
+                    if (obj.has("Person")) {
+                        JSONObject person = obj.getJSONObject("Person");
+                        data = person.getString("FamilyName") + ", " + person.getString("GivenName");
+                    } else if (obj.has("Name")) {
+                        data = obj.getString("Name");
+                    }
+                    addGroupData(data, group);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    continue;
+                }
+            }
         }
 
         @Override
