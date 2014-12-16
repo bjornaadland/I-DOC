@@ -16,6 +16,8 @@ public abstract interface Document
 {
     abstract Uri getUri();
 
+    abstract String getUUID();
+
     /**
      *  Listener class for changes.
      */

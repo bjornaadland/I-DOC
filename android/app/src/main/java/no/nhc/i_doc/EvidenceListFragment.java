@@ -154,7 +154,7 @@ public class EvidenceListFragment extends ListFragment {
 
     public void onStop() {
         Log.e(TAG, "onStop");
-        DocumentUtils.clearUploadListener(); 
+        DocumentUploader.clearUploadListener(); 
         super.onStop();
     }
 
@@ -166,9 +166,9 @@ public class EvidenceListFragment extends ListFragment {
         }
         ((MainActivity)getActivity()).showProgress();
 
-        DocumentUtils.uploadDocuments(
+        DocumentUploader.uploadDocuments(
             docList, 
-            new DocumentUtils.UploadListener() {
+            new DocumentUploader.UploadListener() {
                 @Override
                 public void progress(Integer... progressList) {
                     int progress = 0;

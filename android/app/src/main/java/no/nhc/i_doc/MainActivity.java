@@ -160,6 +160,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
     public void hideProgress() {
         mProgressBar.setVisibility(ProgressBar.GONE);
+        progressDialog.setProgress(0);
     }
 
     public void progress(int progress) {

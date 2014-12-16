@@ -240,6 +240,12 @@ public class CouchDocumentDB extends DocumentDB
             return mId;
         }
 
+        public String getUUID()
+        {
+            return (String)mId;
+        }
+
+
         private java.util.List<Listener> mListeners;
 
         public void addChangeListener(Listener newListener) {

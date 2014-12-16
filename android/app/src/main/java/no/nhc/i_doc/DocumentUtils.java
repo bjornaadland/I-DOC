@@ -1,7 +1,5 @@
 package no.nhc.i_doc;
 
-import android.net.http.AndroidHttpClient;
-import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
 import android.webkit.MimeTypeMap;
@@ -9,13 +7,6 @@ import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.core.ImageLoader;
 
-import java.io.File;
-import java.io.FilterOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,12 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.FileEntity;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -382,162 +368,4 @@ public class DocumentUtils {
         return metadataToJSON(db.createMetadata(type, sug.mId));
     }
 
-    static class UploadDocumentTask extends AsyncTask<String, Integer, Boolean> {
-        UploadListener mListener;
-
-        class ProgressiveEntity implements HttpEntity {
-            HttpEntity mOtherEntity;
-            long mWrittenLength;
-            long mContentLength;
-
-            public ProgressiveEntity(HttpEntity otherEntity) {
-                mOtherEntity = otherEntity;
-                mContentLength = otherEntity.getContentLength();
-                mWrittenLength = 0;
-            }
-
-            @Override
-            public void consumeContent() throws IOException {
-                mOtherEntity.consumeContent();
-            }
-            @Override
-            public InputStream getContent() throws IOException,
-                IllegalStateException {
-                return mOtherEntity.getContent();
-            }
-            @Override
-            public Header getContentEncoding() {
-                return mOtherEntity.getContentEncoding();
-            }
-            @Override
-            public long getContentLength() {
-                return mOtherEntity.getContentLength();
-            }
-            @Override
-            public Header getContentType() {
-                return mOtherEntity.getContentType();
-            }
-            @Override
-            public boolean isChunked() {
-                return mOtherEntity.isChunked();
-            }
-            @Override
-            public boolean isRepeatable() {
-                return mOtherEntity.isRepeatable();
-            }
-            @Override
-            public boolean isStreaming() {
-                return mOtherEntity.isStreaming();
-            }
-
-            long mLastProgress = 0;
-
-            private void doProgressUpdate() {
-                long now = System.currentTimeMillis();
-                if (now - mLastProgress > 100 || mWrittenLength == mContentLength) {
-                    int progress = (int)(((float)mWrittenLength / mContentLength) * 100);
-                    publishProgress(progress);
-                    mLastProgress = now;
-                }
-            }
-
-            @Override
-            public void writeTo(final OutputStream outstream) throws IOException {
-                class ProgressiveOutputStream extends FilterOutputStream {
-                    public ProgressiveOutputStream(OutputStream proxy) {
-                        super(proxy);
-                    }
-                    public void write(int idx) throws IOException {
-                        outstream.write(idx);
-                    }
-                    public void write(byte[] bts) throws IOException {
-                        outstream.write(bts);
-                    }
-                    public void flush() throws IOException {
-                        outstream.flush();
-                    }
-                    public void close() throws IOException {
-                        outstream.close();
-                    }
-                    public void write(byte[] bts, int off, int len) throws IOException {
-                        outstream.write(bts, off, len);
-                        mWrittenLength += len;
-                        doProgressUpdate();
-                    }
-                }
-                mOtherEntity.writeTo(new ProgressiveOutputStream(outstream));
-            }
-        };
-
-
-        protected Boolean doInBackground(String... files) {
-            for (String f : files) {
-                AndroidHttpClient client = AndroidHttpClient.newInstance("I-DOC");
-                // HttpPost post = new HttpPost("http://192.168.1.103:9000/new-doc");
-                HttpPost post = new HttpPost("http://www.gjermshus.com:9000/new-doc");
-                try {
-                    post.setEntity(new ProgressiveEntity(new FileEntity(new File(new URI(f)), "image/jpeg")));
-                } catch (URISyntaxException e) {
-                    return false;
-                }
-                try {
-                    HttpResponse response = client.execute(post);
-                    HttpEntity entity = response.getEntity();
-                } catch (IOException e) {
-                    Log.e(TAG, "exception during post " + e.toString());
-                    return false;
-                } finally {
-                    client.close();
-                }
-            }
-            return true;
-        }
-
-        protected void onPostExecute(Boolean result) {
-            if (mListener != null) {
-                mListener.done(result);
-            }
-            sUploadDocumentTask = null;
-        }
-
-        protected void onProgressUpdate(Integer... progress) {
-            Log.e(TAG, "onProgressUpdate " + progress[0]);
-            if (mListener != null) {
-                mListener.progress(progress);
-            }
-        }
-
-        public UploadDocumentTask(UploadListener listener) {
-            mListener = listener;
-        }
-
-        public void clearListener() {
-            mListener = null;
-        }
-    }
-
-    static UploadDocumentTask sUploadDocumentTask;
-
-    public static interface UploadListener {
-        void progress(Integer... progress);
-        void done(Boolean result);
-    }
-
-    public static void clearUploadListener() {
-        if (sUploadDocumentTask != null) {
-            sUploadDocumentTask.clearListener();
-        }
-    }
-
-    public static void uploadDocuments(List<Document> documents, UploadListener listener) {
-        if (sUploadDocumentTask != null) {
-            return;
-        }
-        sUploadDocumentTask = new UploadDocumentTask(listener);
-        List<String> files = new LinkedList<String>();
-        for (Document doc : documents) {
-             files.addAll(doc.getFiles());
-        }
-        sUploadDocumentTask.execute(files.toArray(new String[files.size()]));
-    }
 }
