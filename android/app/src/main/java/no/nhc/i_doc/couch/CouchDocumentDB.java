@@ -831,57 +831,6 @@ public class CouchDocumentDB extends DocumentDB
         };
     }
 
-    public void sync(final SyncListener listener)
-    {
-        if (sPushReplication != null) return;
-
-        URL url;
-        try {
-            url = new URL("http://ec2-54-78-134-214.eu-west-1.compute.amazonaws.com:4984/idoc");
-        } catch (java.net.MalformedURLException e) {
-            Log.e(TAG, "can't create URL");
-            return;
-        }
-
-        Replication.ChangeListener changeListener = new Replication.ChangeListener() {
-                public void changed(Replication.ChangeEvent event) {
-                    boolean active = 
-                        (sPushReplication.getStatus() == Replication.ReplicationStatus.REPLICATION_ACTIVE) ||
-                        (sPullReplication.getStatus() == Replication.ReplicationStatus.REPLICATION_ACTIVE);
-                    if (!active) {
-                        listener.onEvent(new SyncEvent(SyncEvent.STOPPED, 0, 0));
-                        sPushReplication = null;
-                        sPullReplication = null;
-                    } else {
-                        int total = sPullReplication.getCompletedChangesCount() + 
-                            sPullReplication.getCompletedChangesCount();
-                        int progress = sPullReplication.getChangesCount() + 
-                            sPullReplication.getChangesCount();
-
-                        listener.onEvent(new SyncEvent(
-                                             SyncEvent.PROGRESS, 
-                                             progress,
-                                             total));
-                    }
-                    Log.d(TAG, " event: " + event);
-                }};
-
-
-        sPushReplication = sSingletonDatabase.createPushReplication(url);
-        sPushReplication.setAuthenticator(
-            AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
-        sPushReplication.addChangeListener(changeListener);
-        sPushReplication.start();
-
-        sPullReplication = sSingletonDatabase.createPullReplication(url);
-        sPullReplication.setAuthenticator(
-            AuthenticatorFactory.createBasicAuthenticator("idoc", "pass1"));
-        sPullReplication.addChangeListener(changeListener);
-        sPullReplication.start();
-
-        listener.onEvent(new SyncEvent(SyncEvent.STARTED, 0, 0));
-    }
-
     private java.util.List<Value> getValueSetFromResources(java.lang.Class valueClass) {
         if (sRawSchema == null) {
             String data = "";

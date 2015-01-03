@@ -86,35 +86,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
         return true;
     }
 
-    private void sync() {
-        final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "Please wait ...", "Syncing", false);
-        DocumentDB.get(this).sync(
-            new DocumentDB.SyncListener() {
-                @Override
-                public void onEvent(DocumentDB.SyncEvent event) {
-                    switch(event.getEvent()) {
-                    case DocumentDB.SyncEvent.STARTED:
-                        break;
-                    case DocumentDB.SyncEvent.STOPPED:
-                        progressDialog.dismiss();
-                        break;
-                    case DocumentDB.SyncEvent.PROGRESS:
-                        progressDialog.setMax(event.getMax());
-                        progressDialog.setProgress(event.getProgress());
-                        break;
-                    }
-                }
-            });
-    }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
         case R.id.action_settings:
             startActivity(new Intent(this, SettingsActivity.class));
-            break;
-        case R.id.action_sync:
-            sync();
             break;
         }
         return super.onOptionsItemSelected(item);

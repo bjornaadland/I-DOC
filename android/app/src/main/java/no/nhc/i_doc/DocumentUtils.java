@@ -192,41 +192,6 @@ public class DocumentUtils {
         return obj;
     }
 
-    private static Metadata JSONToMetadata(DocumentDB db, JSONObject json) throws JSONException {
-        java.lang.Class mdClass = getMetadataClass(json.getString("type"));
-        Metadata md = db.createMetadata(mdClass, null);
-
-        if (json.has("id")) {
-            md.setId(json.getString("id"));
-        }
-
-        Log.d(TAG, "JSONToMetadata: " + json.toString());
-
-        for (java.util.Iterator<String> it = json.keys(); it.hasNext();) {
-            String key = it.next();
-            try {
-                Enum prop = Enum.valueOf(mdClass, key);
-                Metadata.PropertyType pt = md.getPropertyType(prop);
-                Object value = null;
-
-                if (pt.getType().isEnum()) {
-                    JSONObject childObject = json.getJSONObject(key);
-                    if (childObject != null) {
-                        Log.d(TAG, "setting enum childObject from json: " + (childObject != null ? childObject.toString() : "null"));
-                        value = JSONToMetadata(db, childObject);
-                    }
-                } else {
-                    value = json.get(key);
-                }
-                md.set(prop, value);
-            } catch (IllegalArgumentException e) {
-                Log.d(TAG, "can't make property out of key " + key);
-            }
-        }
-
-        return md;
-    }
-
     /**
      * Assign a json dictionary to a Metadata object, overwriting the
      * specified properties.
@@ -266,6 +231,41 @@ public class DocumentUtils {
         }
 
         return ret;
+    }
+
+    private static Metadata JSONToMetadata(DocumentDB db, JSONObject json) throws JSONException {
+        java.lang.Class mdClass = getMetadataClass(json.getString("type"));
+        Metadata md = db.createMetadata(mdClass, null);
+
+        if (json.has("id")) {
+            md.setId(json.getString("id"));
+        }
+
+        Log.d(TAG, "JSONToMetadata: " + json.toString());
+
+        for (java.util.Iterator<String> it = json.keys(); it.hasNext();) {
+            String key = it.next();
+            try {
+                Enum prop = Enum.valueOf(mdClass, key);
+                Metadata.PropertyType pt = md.getPropertyType(prop);
+                Object value = null;
+
+                if (pt.getType().isEnum()) {
+                    JSONObject childObject = json.getJSONObject(key);
+                    if (childObject != null) {
+                        Log.d(TAG, "setting enum childObject from json: " + (childObject != null ? childObject.toString() : "null"));
+                        value = JSONToMetadata(db, childObject);
+                    }
+                } else {
+                    value = json.get(key);
+                }
+                md.set(prop, value);
+            } catch (IllegalArgumentException e) {
+                Log.d(TAG, "can't make property out of key " + key);
+            }
+        }
+
+        return md;
     }
 
     /**
